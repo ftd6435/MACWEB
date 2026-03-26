@@ -6,9 +6,9 @@ interface LoadingSpinnerProps {
     fullPage?: boolean;
 }
 
-const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
-    size = "md", 
-    fullPage = false 
+const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
+    size = "md",
+    fullPage = false
 }) => {
     const sizeClasses = {
         sm: "w-12 h-12",
@@ -28,12 +28,12 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
                     ease: "linear"
                 }}
             />
-            
+
             {/* Centered Logo */}
             <div className="absolute inset-0 flex items-center justify-center p-2">
-                <img 
-                    src="/img/logo.png" 
-                    alt="MAC Logo" 
+                <img
+                    src="/img/header_logo.png"
+                    alt="MAC Logo"
                     className="w-2/3 h-2/3 object-contain animate-pulse"
                 />
             </div>

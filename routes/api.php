@@ -7,8 +7,21 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\ProjectsController;
 use App\Http\Controllers\TagsController;
+use App\Http\Controllers\Api\CmsController;
+use App\Http\Controllers\Api\CmsAdminController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
+use App\Http\Controllers\Auth\LoginController;
+
+// Auth routes
+Route::post('/login', [LoginController::class, 'login'])->name('login');
+Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+// CMS Data routes
+Route::get('/cms/global', [CmsController::class, 'getGlobalData']);
+Route::get('/cms/home', [CmsController::class, 'getHomeData']);
+Route::get('/cms/about', [CmsController::class, 'getAboutData']);
 
 // Public routes
 Route::post('/contact', [ContactController::class, 'submit']);
@@ -42,7 +55,7 @@ Route::middleware('auth:sanctum')->group(function () {
         return $request->user();
     });
 
-    // Admin routes
+    // Admin routes - Core
     Route::post('/articles', [ArticlesController::class, 'store']);
     Route::put('/articles/{article}', [ArticlesController::class, 'update']);
     Route::delete('/articles/{article}', [ArticlesController::class, 'destroy']);
@@ -50,6 +63,35 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/projects', [ProjectsController::class, 'store']);
     Route::put('/projects/{project}', [ProjectsController::class, 'update']);
     Route::delete('/projects/{project}', [ProjectsController::class, 'destroy']);
+
+    // Admin routes - CMS
+    Route::get('/admin/services', [CmsAdminController::class, 'services']);
+    Route::post('/admin/services', [CmsAdminController::class, 'storeService']);
+    Route::put('/admin/services/{service}', [CmsAdminController::class, 'updateService']);
+    Route::delete('/admin/services/{service}', [CmsAdminController::class, 'destroyService']);
+
+    Route::get('/admin/team', [CmsAdminController::class, 'team']);
+    Route::post('/admin/team', [CmsAdminController::class, 'storeTeamMember']);
+    Route::put('/admin/team/{member}', [CmsAdminController::class, 'updateTeamMember']);
+    Route::delete('/admin/team/{member}', [CmsAdminController::class, 'destroyTeamMember']);
+
+    Route::get('/admin/testimonials', [CmsAdminController::class, 'testimonials']);
+    Route::post('/admin/testimonials', [CmsAdminController::class, 'storeTestimonial']);
+    Route::put('/admin/testimonials/{testimonial}', [CmsAdminController::class, 'updateTestimonial']);
+    Route::delete('/admin/testimonials/{testimonial}', [CmsAdminController::class, 'destroyTestimonial']);
+
+    Route::get('/admin/timeline', [CmsAdminController::class, 'timeline']);
+    Route::post('/admin/timeline', [CmsAdminController::class, 'storeMilestone']);
+    Route::put('/admin/timeline/{milestone}', [CmsAdminController::class, 'updateMilestone']);
+    Route::delete('/admin/timeline/{milestone}', [CmsAdminController::class, 'destroyMilestone']);
+
+    Route::get('/admin/stats', [CmsAdminController::class, 'stats']);
+    Route::post('/admin/stats', [CmsAdminController::class, 'storeStat']);
+    Route::put('/admin/stats/{stat}', [CmsAdminController::class, 'updateStat']);
+    Route::delete('/admin/stats/{stat}', [CmsAdminController::class, 'destroyStat']);
+
+    Route::get('/admin/settings', [CmsAdminController::class, 'settings']);
+    Route::put('/admin/settings', [CmsAdminController::class, 'updateSettings']);
 
     Route::post('/categories', [CategoriesController::class, 'store']);
     Route::put('/categories/{category}', [CategoriesController::class, 'update']);

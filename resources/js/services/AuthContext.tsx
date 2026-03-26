@@ -1,6 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
+// Configure axios for Sanctum
+axios.defaults.withCredentials = true;
+axios.defaults.withXSRFToken = true;
+const API_BASE_URL = window.location.origin; // For web routes like /login
+const API_DATA_URL = `${window.location.origin}/api`; // For API routes like /api/user
+
 interface User {
     id: number;
     name: string;
@@ -24,7 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useEffect(() => {
         const checkAuth = async () => {
             try {
-                const response = await axios.get('/api/user');
+                const response = await axios.get(`${API_DATA_URL}/user`);
                 setUser(response.data);
             } catch (error: any) {
                 // If 401, user is just not logged in, no need to log as error
@@ -41,14 +47,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const login = async (credentials: any) => {
-        await axios.get('/sanctum/csrf-cookie');
-        await axios.post('/login', credentials);
-        const response = await axios.get('/api/user');
+        await axios.get(`${API_BASE_URL}/sanctum/csrf-cookie`);
+        await axios.post(`${API_DATA_URL}/login`, credentials);
+        const response = await axios.get(`${API_DATA_URL}/user`);
         setUser(response.data);
     };
 
     const logout = async () => {
-        await axios.post('/logout');
+        await axios.post(`${API_DATA_URL}/logout`);
         setUser(null);
     };
 

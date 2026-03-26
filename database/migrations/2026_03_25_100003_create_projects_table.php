@@ -13,16 +13,13 @@ return new class extends Migration {
             $table->string('slug')->unique();
             $table->text('description');
             $table->longText('details')->nullable();
-            $table->string('location');
-            $table->string('image')->nullable();
-            $table->unsignedBigInteger('category_id')->nullable();
-            $table->foreign('category_id')->references('id')->on('categories')->onDelete('set null');
-            $table->integer('year')->nullable();
-            $table->string('duration')->nullable();
-            $table->string('budget')->nullable();
-            $table->text('testimonial')->nullable();
-            $table->string('testimonial_author')->nullable();
-            $table->integer('views')->default(0);
+            $table->string('location')->nullable();
+            $table->string('year')->nullable();
+            $table->json('metrics')->nullable(); // For dynamic metrics like "Surface", "Durée"
+            $table->json('challenges')->nullable(); // Array of {title, desc, solution}
+            $table->json('technical_details')->nullable(); // specifications, materials, standards
+            $table->json('gallery')->nullable(); // Array of image URLs
+            $table->boolean('is_featured')->default(false);
             $table->timestamps();
         });
     }

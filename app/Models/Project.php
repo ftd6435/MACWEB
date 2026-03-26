@@ -7,20 +7,27 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Project extends Model
 {
-    protected $fillable = [
-        'title',
-        'slug',
-        'description',
-        'details',
-        'location',
-        'image',
-        'category_id',
-        'year',
-        'duration',
-        'budget',
-        'testimonial',
-        'testimonial_author',
-        'views',
+    protected $fillable = [ 
+        'title', 
+        'slug', 
+        'description', 
+        'details', 
+        'location', 
+        'year', 
+        'metrics', 
+        'challenges', 
+        'technical_details', 
+        'gallery', 
+        'is_featured', 
+        'category_id'
+    ];
+
+    protected $casts = [
+        'metrics' => 'array',
+        'challenges' => 'array',
+        'technical_details' => 'array',
+        'gallery' => 'array',
+        'is_featured' => 'boolean',
     ];
 
     public function category()

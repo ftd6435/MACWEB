@@ -11,15 +11,17 @@ return new class extends Migration {
             $table->id();
             $table->string('title');
             $table->string('slug')->unique();
-            $table->text('excerpt');
+            $table->text('excerpt')->nullable();
             $table->longText('content');
-            $table->string('author');
-            $table->string('featured_image')->nullable();
+            $table->string('image')->nullable();
+            $table->unsignedBigInteger('author_id');
+            $table->foreign('author_id')->references('id')->on('users');
             $table->unsignedBigInteger('category_id')->nullable();
-            $table->foreign('category_id')->references('id')->on('categories')->onDelete('set null');
-            $table->boolean('published')->default(false);
-            $table->timestamp('published_at')->nullable();
-            $table->integer('views')->default(0);
+            $table->foreign('category_id')->references('id')->on('categories');
+            $table->integer('read_time')->default(5);
+            $table->boolean('is_published')->default(false);
+            $table->boolean('is_featured')->default(false);
+            $table->json('toc')->nullable(); // Table of contents
             $table->timestamps();
         });
     }

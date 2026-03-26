@@ -36,20 +36,16 @@ export default function Login() {
         <div className="min-h-screen flex bg-white font-sans selection:bg-[#00B8D4]/30">
             {/* Left Side - Visual/Branding */}
             <div className="hidden lg:flex lg:w-1/2 relative bg-[#212121] overflow-hidden">
-                <div className="absolute inset-0 z-10 bg-gradient-to-br from-[#212121] via-[#212121]/90 to-transparent"></div>
+                <div className="absolute inset-0 z-10 bg-gradient-to-br from-[#00B8D4]/80 via-[#00B8D4]/40 to-[#212121]/90 backdrop-blur-[1px]"></div>
                 <img
                     src="https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=1200"
                     alt="MAC Construction"
-                    className="absolute inset-0 w-full h-full object-cover scale-110 blur-[2px] opacity-40"
+                    className="absolute inset-0 w-full h-full object-cover scale-110 opacity-50"
                 />
 
                 <div className="relative z-20 flex flex-col justify-between p-16 w-full">
                     <Link to="/" className="flex items-center group">
-                        <img src="/img/logo.png" alt="MAC Logo" className="h-12 w-auto brightness-0 invert mr-4 smooth-animation group-hover:scale-110" />
-                        <div>
-                            <h1 className="text-3xl font-black text-white italic leading-none">MAC</h1>
-                            <p className="text-[10px] text-white/60 font-black uppercase tracking-[0.2em] mt-1">Merveille d'Afrique Construction</p>
-                        </div>
+                        <img src="/img/header_logo.png" alt="MAC Logo" className="h-20 w-auto brightness-0 invert smooth-animation group-hover:scale-110" />
                     </Link>
 
                     <div className="max-w-md">

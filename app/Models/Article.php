@@ -9,32 +9,40 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 class Article extends Model
 {
     protected $fillable = [
-        'title',
-        'slug',
-        'excerpt',
-        'content',
-        'author',
-        'featured_image',
-        'category_id',
-        'published',
-        'published_at',
-        'views',
+        'title', 
+        'slug', 
+        'excerpt', 
+        'content', 
+        'image', 
+        'author_id', 
+        'category_id', 
+        'read_time', 
+        'is_published', 
+        'is_featured', 
+        'toc'
     ];
 
     protected $casts = [
-        'published' => 'boolean',
-        'published_at' => 'datetime',
+        'is_published' => 'boolean',
+        'is_featured' => 'boolean',
+        'toc' => 'array',
     ];
+
+    public function author()
+    {
+        return $this->belongsTo(User::class, 'author_id');
+    }
 
     public function category()
     {
         return $this->belongsTo(Category::class);
     }
 
-    public function tags(): BelongsToMany
+    public function tags()
     {
         return $this->belongsToMany(Tag::class);
     }
+
 
     public function comments(): MorphMany
     {
