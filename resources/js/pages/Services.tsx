@@ -1,169 +1,360 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Hammer, Wrench, Briefcase, Zap } from "lucide-react";
+import {
+    Home,
+    Building2,
+    Factory,
+    Droplets,
+    ChevronRight,
+    CheckCircle2,
+    Settings,
+    ShieldCheck,
+    Users,
+    Phone,
+    Mail,
+    MapPin,
+    Send,
+    Zap
+} from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function Services() {
-    const services = [
+    const mainServices = [
         {
-            icon: <Hammer className="w-8 h-8" />,
+            icon: <Home className="w-10 h-10 text-[#00B8D4]" />,
             title: "Construction Résidentielle",
-            description:
-                "Maisons, villas et résidences de luxe construites avec précision et attention aux détails",
-            features: [
-                "Conception personnalisée",
-                "Matériaux premium",
-                "Finitions haut de gamme",
-            ],
+            desc: "Villas, immeubles d'habitations modernes.",
         },
         {
-            icon: <Briefcase className="w-8 h-8" />,
+            icon: <Building2 className="w-10 h-10 text-[#00B8D4]" />,
             title: "Construction Commerciale",
-            description:
-                "Immeubles de bureaux, centres commerciaux et espaces commerciaux de qualité professionnelle",
-            features: [
-                "Respect des délais",
-                "Solutions modulables",
-                "Normes de sécurité",
-            ],
+            desc: "Bureaux, centres commerciaux et hôtellerie.",
         },
         {
-            icon: <Zap className="w-8 h-8" />,
+            icon: <Factory className="w-10 h-10 text-[#00B8D4]" />,
             title: "Construction Industrielle",
-            description:
-                "Usines, entrepôts et infrastructures industrielles complexes et robustes",
-            features: [
-                "Ingénierie avancée",
-                "Capacités importantes",
-                "Solutions durables",
-            ],
+            desc: "Usines, entrepôts et infrastructures.",
         },
         {
-            icon: <Wrench className="w-8 h-8" />,
+            icon: <Droplets className="w-10 h-10 text-[#00B8D4]" />,
             title: "Services de Forage",
-            description:
-                "Forage d'eau, puits artésiens et services géotechniques spécialisés",
-            features: [
-                "Technologie moderne",
-                "Expertise technique",
-                "Conformité légale",
-            ],
+            desc: "Forage d'eau, performances et exploration.",
         },
     ];
 
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
-    };
+    const constructionDetails = [
+        {
+            title: "Construction Résidentielle",
+            desc: "Nous créons des espaces de vie exceptionnels, du logement individuel aux complexes résidentiels de grande envergure. Notre approche intègre l'architecture moderne et le respect des standards internationaux de qualité et de confort.",
+            features: ["Villas et Maisons Individuelles", "Complexes Résidentiels", "Aménagement de Lotissements"],
+            image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=1000&auto=format&fit=crop",
+            link: "/projects?category=Residential"
+        },
+        {
+            title: "Construction Commerciale",
+            desc: "Nous concevons et réalisons des espaces commerciaux qui allient fonctionnalité, esthétique et performance énergétique. Chaque projet est pensé pour optimiser l'expérience utilisateur et la rentabilité.",
+            features: ["Bureaux et Tours d'Affaires", "Centres Commerciaux", "Hôtels et Hospitalité"],
+            image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1000&auto=format&fit=crop",
+            link: "/projects?category=Commercial",
+            reverse: true
+        },
+        {
+            title: "Construction Industrielle",
+            desc: "Nos installations industrielles sont conçues pour répondre aux exigences les plus strictes en termes de sécurité, efficacité et durabilité. Nous maîtrisons les normes internationales et les spécificités techniques.",
+            features: ["Usines et Unités de Production", "Entrepôts et Centres Logistiques", "Infrastructures Spécialisées"],
+            image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=1000&auto=format&fit=crop",
+            link: "/projects?category=Industrial"
+        }
+    ];
 
-    const itemVariants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
-    };
+    const workSteps = [
+        { num: "1", title: "Consultation Initiale", desc: "Analyse de vos besoins et définition des objectifs du projet." },
+        { num: "2", title: "Étude et Devis", desc: "Conception technique détaillée avec devis transparent et planifié." },
+        { num: "3", title: "Planification", desc: "Organisation des ressources, obtention des autorisations et calendrier." },
+        { num: "4", title: "Exécution", desc: "Réalisation avec contrôle qualité continu et communication régulière." },
+        { num: "5", title: "Livraison et Suivi", desc: "Réception finale avec garanties et suivi de maintenance." }
+    ];
 
     return (
-        <div className="smooth-gradient-bg">
-            {/* Header */}
-            <section className="bg-gradient-to-r from-[#00B8D4] to-[#0097A7] text-white py-16">
-                <motion.div
-                    className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center"
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
-                >
-                    <h1 className="text-4xl lg:text-5xl font-bold mb-4">
-                        Nos Services
-                    </h1>
-                    <p className="text-lg text-white/90">
-                        Une expertise complète pour tous vos besoins en
-                        construction et forage
-                    </p>
-                </motion.div>
-            </section>
-
-            {/* Services Grid */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-                <motion.div
-                    className="grid grid-cols-1 md:grid-cols-2 gap-8"
-                    variants={containerVariants}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true }}
-                >
-                    {services.map((service, idx) => (
-                        <motion.div
-                            key={idx}
-                            variants={itemVariants}
-                            className="p-8 bg-white rounded-lg border border-[#E0E0E0] hover:shadow-lg smooth-animation"
-                        >
-                            <div className="flex items-center justify-center w-16 h-16 rounded-lg bg-[#00B8D4]/10 text-[#00B8D4] mb-6">
-                                {service.icon}
-                            </div>
-                            <h3 className="text-2xl font-bold text-[#212121] mb-4">
-                                {service.title}
-                            </h3>
-                            <p className="text-[#616161] mb-6">
-                                {service.description}
-                            </p>
-                            <ul className="space-y-2">
-                                {service.features.map((feature, fidx) => (
-                                    <li
-                                        key={fidx}
-                                        className="flex items-center text-[#616161] text-sm"
-                                    >
-                                        <div className="w-2 h-2 rounded-full bg-[#00B8D4] mr-3" />
-                                        {feature}
-                                    </li>
-                                ))}
-                            </ul>
-                        </motion.div>
-                    ))}
-                </motion.div>
-            </section>
-
-            {/* Process Section */}
-            <section className="bg-white py-20">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <motion.h2
-                        className="text-3xl lg:text-4xl font-bold text-[#212121] mb-16 text-center"
-                        initial={{ opacity: 0 }}
-                        whileInView={{ opacity: 1 }}
-                        viewport={{ once: true }}
+        <div className="bg-white overflow-hidden">
+            {/* Hero Section */}
+            <section className="relative h-[60vh] flex items-center justify-center pt-20">
+                <div className="absolute inset-0 z-0">
+                    <img
+                        src="https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=2000&auto=format&fit=crop"
+                        alt="Services Hero"
+                        className="w-full h-full object-cover"
+                    />
+                    {/* Overlay with Sky Blue Linear Gradient and Blur */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-[#00B8D4]/60 via-[#00B8D4]/30 to-[#212121]/90 backdrop-blur-[2px]"></div>
+                </div>
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+                    <motion.h1
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-5xl md:text-6xl font-black text-white mb-6"
                     >
-                        Notre Processus
-                    </motion.h2>
+                        Nos Services
+                    </motion.h1>
+                    <p className="text-xl text-white/80 max-w-3xl mx-auto leading-relaxed">
+                        Découvrez l'ensemble de nos compétences en construction et forage, conçues pour répondre à tous vos besoins avec une excellence métier.
+                    </p>
+                </div>
+            </section>
 
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        {[
-                            "Consultation",
-                            "Étude",
-                            "Planification",
-                            "Exécution",
-                        ].map((step, idx) => (
+            {/* Excellence Grid */}
+            <section className="py-24 bg-white">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                    <h2 className="text-3xl md:text-4xl font-extrabold text-[#212121] mb-6">Excellence dans Tous nos Domaines</h2>
+                    <p className="text-[#616161] max-w-3xl mx-auto mb-16 leading-relaxed">
+                        De la construction résidentielle au forage spécialisé, MAC vous accompagne dans tous vos projets avec des solutions sur-mesure et une expertise reconnue à travers l'Afrique.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {mainServices.map((service, idx) => (
                             <motion.div
                                 key={idx}
-                                className="flex items-center"
                                 initial={{ opacity: 0, y: 20 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
                                 transition={{ delay: idx * 0.1 }}
+                                className="p-10 bg-[#E0F7FA] rounded-3xl border border-[#F1F5F9] hover:shadow-xl smooth-animation text-center"
                             >
-                                <div className="flex-shrink-0">
-                                    <div className="flex items-center justify-center h-12 w-12 rounded-md bg-[#00B8D4] text-white font-bold">
-                                        {idx + 1}
-                                    </div>
+                                <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center mb-6 mx-auto group-hover:bg-[#00B8D4]/10 smooth-animation shadow-sm">
+                                    {service.icon}
                                 </div>
-                                <div className="ml-4 flex-1">
-                                    <p className="text-lg font-semibold text-[#212121]">
-                                        {step}
-                                    </p>
-                                </div>
-                                {idx < 3 && (
-                                    <div className="ml-4 text-2xl text-[#00B8D4]">
-                                        →
-                                    </div>
-                                )}
+                                <h4 className="text-lg font-bold text-[#212121] mb-3 leading-tight">{service.title}</h4>
+                                <p className="text-[#616161] text-xs leading-relaxed">{service.desc}</p>
                             </motion.div>
                         ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Construction Details */}
+            <section className="py-24 bg-[#F8FAFC]">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="text-center mb-20">
+                        <h2 className="text-4xl font-black text-[#212121] mb-4">Services de Construction</h2>
+                        <p className="text-[#616161] max-w-2xl mx-auto">
+                            Bâtir des structures innovantes tout en respectant les normes de construction les plus élevées adaptées à chaque type de projet.
+                        </p>
+                    </div>
+
+                    <div className="space-y-32">
+                        {constructionDetails.map((item, idx) => (
+                            <div key={idx} className={`flex flex-col lg:flex-row items-center gap-16 ${item.reverse ? 'lg:flex-row-reverse' : ''}`}>
+                                <motion.div
+                                    initial={{ opacity: 0, x: item.reverse ? 50 : -50 }}
+                                    whileInView={{ opacity: 1, x: 0 }}
+                                    viewport={{ once: true }}
+                                    className="flex-1 space-y-8"
+                                >
+                                    <h3 className="text-3xl font-black text-[#212121]">{item.title}</h3>
+                                    <p className="text-[#616161] leading-relaxed text-lg">{item.desc}</p>
+                                    <ul className="space-y-4">
+                                        {item.features.map((feature, fIdx) => (
+                                            <li key={fIdx} className="flex items-center space-x-3">
+                                                <div className="w-6 h-6 rounded-full bg-[#00B8D4]/10 flex items-center justify-center">
+                                                    <CheckCircle2 className="w-4 h-4 text-[#00B8D4]" />
+                                                </div>
+                                                <span className="font-bold text-[#212121]">{feature}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    <Link to={item.link} className="inline-flex items-center text-[#00B8D4] font-black group">
+                                        Voir nos Projets {item.title.split(' ')[1]} <ChevronRight className="ml-2 w-5 h-5 group-hover:translate-x-1 smooth-animation" />
+                                    </Link>
+                                </motion.div>
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    whileInView={{ opacity: 1, scale: 1 }}
+                                    viewport={{ once: true }}
+                                    className="flex-1"
+                                >
+                                    <img src={item.image} alt={item.title} className="rounded-[3rem] shadow-2xl w-full h-[400px] object-cover" />
+                                </motion.div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Forage Section */}
+            <section className="py-24 bg-white">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="text-center mb-20">
+                        <h2 className="text-4xl font-black text-[#212121] mb-4">Services de Forage</h2>
+                        <p className="text-[#616161] max-w-2xl mx-auto">
+                            Expertise technique avancée en forage avec des équipements de pointe pour tous types d'interventions.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start mb-20">
+                        <div className="space-y-8">
+                            <h3 className="text-2xl font-black text-[#212121]">Forage Professionnel Multi-Secteurs</h3>
+                            <div className="space-y-6">
+                                {[
+                                    { icon: <Droplets className="w-6 h-6" />, title: "Forage d'Eau", desc: "Puits pour particuliers, irrigation et usage industriel avec analyse géophysique complète." },
+                                    { icon: <Settings className="w-6 h-6" />, title: "Forage Géotechnique", desc: "Solutions d'exploration du sol pour vos projets d'infrastructure et d'ingénierie." },
+                                    { icon: <Zap className="w-6 h-6" />, title: "Forage d'Exploration", desc: "Études géologiques et minérales pour des solutions de projets de grande envergure." }
+                                ].map((forage, i) => (
+                                    <div key={i} className="flex items-start space-x-6 p-6 rounded-2xl bg-[#F8FAFC] border border-[#F1F5F9]">
+                                        <div className="w-12 h-12 rounded-xl bg-[#00B8D4] text-white flex items-center justify-center shrink-0">
+                                            {forage.icon}
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-[#212121] mb-2">{forage.title}</h4>
+                                            <p className="text-sm text-[#616161] leading-relaxed">{forage.desc}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="pt-8 border-t border-[#F1F5F9]">
+                                <h4 className="font-black text-[#212121] mb-6 uppercase tracking-widest text-xs">Zones d'Intervention</h4>
+                                <div className="grid grid-cols-2 gap-4">
+                                    {["Sénégal", "Mali", "Guinée", "Côte d'Ivoire"].map((zone, i) => (
+                                        <div key={i} className="flex items-center space-x-2 text-sm font-bold text-[#616161]">
+                                            <MapPin className="w-4 h-4 text-[#00B8D4]" />
+                                            <span>{zone}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="space-y-6">
+                            <img src="https://images.unsplash.com/photo-1533241242276-888998064956?q=80&w=1000&auto=format&fit=crop" alt="Forage Rig" className="rounded-[2.5rem] shadow-xl w-full h-[300px] object-cover" />
+                            <img src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=1000&auto=format&fit=crop" alt="Mining" className="rounded-[2.5rem] shadow-xl w-full h-[300px] object-cover" />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        {[
+                            { icon: <Settings />, title: "Équipements de Pointe", desc: "Machines de forage de dernière génération adaptées à tous types de terrains." },
+                            { icon: <ShieldCheck />, title: "Normes Internationales", desc: "Certifications ISO et respect strict des standards d'hygiène et sécurité." },
+                            { icon: <Users />, title: "Équipe Experte", desc: "Ingénieurs et techniciens hautement qualifiés avec des années d'expérience terrain." }
+                        ].map((item, i) => (
+                            <div key={i} className="text-center p-8 bg-[#F8FAFC] rounded-3xl border border-[#F1F5F9]">
+                                <div className="w-14 h-14 rounded-full bg-[#00B8D4]/10 text-[#00B8D4] flex items-center justify-center mx-auto mb-6">
+                                    {React.cloneElement(item.icon as React.ReactElement, { className: "w-7 h-7" })}
+                                </div>
+                                <h4 className="font-bold text-[#212121] mb-3">{item.title}</h4>
+                                <p className="text-xs text-[#616161] leading-relaxed">{item.desc}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Work Method */}
+            <section className="py-24 bg-[#F8FAFC]">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="text-center mb-20">
+                        <h2 className="text-4xl font-black text-[#212121] mb-4">Notre Méthode de Travail</h2>
+                        <p className="text-[#616161] max-w-2xl mx-auto">
+                            Un processus structuré et transparent qui garantit la réussite de votre projet du premier contact à la livraison finale.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
+                        {workSteps.map((step, i) => (
+                            <div key={i} className="relative group text-center">
+                                <div className="w-16 h-16 rounded-full bg-white shadow-xl flex items-center justify-center mx-auto mb-8 border-2 border-[#00B8D4] text-[#00B8D4] font-black text-2xl group-hover:bg-[#00B8D4] group-hover:text-white smooth-animation relative z-10">
+                                    {step.num}
+                                </div>
+                                {i < 4 && (
+                                    <div className="hidden md:block absolute top-8 left-[calc(50%+2rem)] w-[calc(100%-4rem)] h-0.5 bg-[#E0E0E0] z-0"></div>
+                                )}
+                                <h4 className="font-bold text-[#212121] mb-3 text-sm">{step.title}</h4>
+                                <p className="text-[10px] text-[#757575] leading-relaxed">{step.desc}</p>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="mt-24 grid grid-cols-1 md:grid-cols-3 gap-8 py-16 px-12 bg-[#E0F7FA] rounded-[3rem]">
+                        <div className="text-center border-b md:border-b-0 md:border-r border-[#B2EBF2] pb-8 md:pb-0">
+                            <p className="text-4xl font-black text-[#00B8D4] mb-2">98%</p>
+                            <p className="text-sm font-bold text-[#212121]">Projets à Temps</p>
+                            <p className="text-[10px] text-[#757575] uppercase tracking-widest font-bold">Respect des délais</p>
+                        </div>
+                        <div className="text-center border-b md:border-b-0 md:border-r border-[#B2EBF2] py-8 md:py-0">
+                            <p className="text-4xl font-black text-[#00B8D4] mb-2">15+</p>
+                            <p className="text-sm font-bold text-[#212121]">Années d'Expérience</p>
+                            <p className="text-[10px] text-[#757575] uppercase tracking-widest font-bold">Expertise reconnue</p>
+                        </div>
+                        <div className="text-center pt-8 md:pt-0">
+                            <p className="text-4xl font-black text-[#00B8D4] mb-2">100%</p>
+                            <p className="text-sm font-bold text-[#212121]">Satisfaction Client</p>
+                            <p className="text-[10px] text-[#757575] uppercase tracking-widest font-bold">Objectif prioritaire</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Contact Form Section */}
+            <section className="py-24 bg-white">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="bg-[#00B8D4] rounded-[4rem] overflow-hidden shadow-2xl flex flex-col lg:flex-row shadow-[#00B8D4]/30">
+                        <div className="lg:w-3/5 p-12 lg:p-20 text-white space-y-12">
+                            <div>
+                                <h2 className="text-4xl lg:text-5xl font-black mb-6">Besoin d'un Devis Personnalisé?</h2>
+                                <p className="text-white/80 text-lg leading-relaxed max-w-xl">
+                                    Contactez-nous pour discuter de votre projet. Nous vous fournirons une estimation détaillée et personnalisée dans les plus brefs délais.
+                                </p>
+                            </div>
+
+                            <form className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <input type="text" placeholder="Votre nom complet" className="bg-white/10 border border-white/20 rounded-xl px-6 py-4 text-white placeholder:text-white/60 focus:bg-white/20 focus:outline-none smooth-animation" />
+                                <input type="email" placeholder="Email professionnel" className="bg-white/10 border border-white/20 rounded-xl px-6 py-4 text-white placeholder:text-white/60 focus:bg-white/20 focus:outline-none smooth-animation" />
+                                <input type="tel" placeholder="Téléphone" className="bg-white/10 border border-white/20 rounded-xl px-6 py-4 text-white placeholder:text-white/60 focus:bg-white/20 focus:outline-none smooth-animation" />
+                                <select className="bg-white/10 border border-white/20 rounded-xl px-6 py-4 text-white focus:bg-white/20 focus:outline-none smooth-animation appearance-none cursor-pointer">
+                                    <option className="text-[#212121]">Type de projet</option>
+                                    <option className="text-[#212121]">Construction</option>
+                                    <option className="text-[#212121]">Forage</option>
+                                </select>
+                                <textarea placeholder="Décrivez votre projet..." className="bg-white/10 border border-white/20 rounded-xl px-6 py-4 text-white placeholder:text-white/60 focus:bg-white/20 focus:outline-none smooth-animation sm:col-span-2 h-32 resize-none"></textarea>
+                                <button className="sm:col-span-2 bg-white text-[#00B8D4] font-black py-5 rounded-2xl shadow-xl hover:bg-[#F8FAFC] hover:-translate-y-1 smooth-animation flex items-center justify-center uppercase tracking-widest text-sm">
+                                    Envoyer la demande <Send className="ml-3 w-5 h-5" />
+                                </button>
+                            </form>
+                        </div>
+
+                        <div className="lg:w-2/5 bg-white/10 p-12 lg:p-20 text-white border-l border-white/10 backdrop-blur-md flex flex-col justify-between">
+                            <div className="space-y-12">
+                                <h3 className="text-2xl font-black">Ou contactez-nous directement</h3>
+                                <div className="space-y-8">
+                                    <div className="flex items-center space-x-6 group">
+                                        <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center group-hover:bg-white/20 smooth-animation shrink-0">
+                                            <Phone className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-white/60 uppercase tracking-widest mb-1">Téléphone</p>
+                                            <p className="text-lg font-bold">+221 77 518 45 67</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center space-x-6 group">
+                                        <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center group-hover:bg-white/20 smooth-animation shrink-0">
+                                            <Mail className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-white/60 uppercase tracking-widest mb-1">Email</p>
+                                            <p className="text-lg font-bold">contact@mac-construction.com</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center space-x-6 group">
+                                        <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center group-hover:bg-white/20 smooth-animation shrink-0">
+                                            <MapPin className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-white/60 uppercase tracking-widest mb-1">Adresse</p>
+                                            <p className="text-lg font-bold">12 Avenue Cheikh Anta Diop, Dakar, Sénégal</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="pt-12 mt-12 border-t border-white/10">
+                                <p className="text-xs font-medium text-white/60 italic">Nous nous engageons à vous répondre dans les 24h ouvrées.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>

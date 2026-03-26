@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Mail, Phone, MapPin, Facebook, Linkedin, Twitter } from "lucide-react";
+import { Mail, Phone, MapPin, Facebook, Linkedin, Twitter, Instagram } from "lucide-react";
 
 export default function Footer() {
     const currentYear = new Date().getFullYear();
@@ -10,13 +10,18 @@ export default function Footer() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
                     {/* Company Info */}
-                    <div>
-                        <h3 className="text-lg font-bold mb-4">
-                            MAC Construction
-                        </h3>
-                        <p className="text-white/75 text-sm leading-relaxed mb-4">
+                    <div className="col-span-1 md:col-span-1">
+                        <Link to="/" className="inline-block mb-8 group shrink-0">
+                            <img
+                                src="/img/footer_logo.png"
+                                alt="MAC Footer Logo"
+                                className="h-20 md:h-24 w-auto object-contain smooth-animation group-hover:scale-105"
+                            />
+                        </Link>
+                        <p className="text-white/75 text-sm leading-relaxed mb-8">
                             Votre partenaire de confiance pour tous vos projets
-                            de construction et forage en Afrique.
+                            de construction et forage en Afrique. Expertise,
+                            qualité et engagement.
                         </p>
                         <div className="flex space-x-3">
                             <a
@@ -69,6 +74,8 @@ export default function Footer() {
                             {[
                                 { path: "/about", label: "À Propos" },
                                 { path: "/contact", label: "Contact" },
+                                { path: "/careers", label: "Carrières" },
+                                { path: "/partnership", label: "Partenariat" },
                             ].map((link) => (
                                 <li key={link.path}>
                                     <Link
@@ -89,10 +96,10 @@ export default function Footer() {
                             <li className="flex items-start space-x-2">
                                 <Phone className="w-4 h-4 mt-0.5 text-[#00B8D4] flex-shrink-0" />
                                 <a
-                                    href="tel:+225000000000"
+                                    href="tel:+22462214614"
                                     className="text-white/75 hover:text-[#00B8D4] smooth-animation"
                                 >
-                                    +225 (0) 000 000 000
+                                    +224 622 14 67 14
                                 </a>
                             </li>
                             <li className="flex items-start space-x-2">
@@ -101,13 +108,13 @@ export default function Footer() {
                                     href="mailto:contact@mac.ci"
                                     className="text-white/75 hover:text-[#00B8D4] smooth-animation"
                                 >
-                                    contact@mac.ci
+                                    contact@mac-construction.com
                                 </a>
                             </li>
                             <li className="flex items-start space-x-2">
                                 <MapPin className="w-4 h-4 mt-0.5 text-[#00B8D4] flex-shrink-0" />
                                 <span className="text-white/75">
-                                    Abidjan, Côte d'Ivoire
+                                    Conakry, Guinée
                                 </span>
                             </li>
                         </ul>
