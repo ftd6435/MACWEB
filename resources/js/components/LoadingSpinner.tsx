@@ -32,7 +32,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
             {/* Centered Logo */}
             <div className="absolute inset-0 flex items-center justify-center p-2">
                 <img
-                    src="/img/header_logo.png"
+                    src="/img/logo.png"
                     alt="MAC Logo"
                     className="w-2/3 h-2/3 object-contain animate-pulse"
                 />
