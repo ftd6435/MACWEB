@@ -21,10 +21,12 @@ import {
     Tag,
     ChevronLeft,
     ChevronRight,
-    ExternalLink
+    ExternalLink,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
+import ModalPortal from "../../components/ModalPortal";
+import { useToast } from "../../services/ToastContext";
 
 interface Article {
     id: number;
@@ -32,7 +34,7 @@ interface Article {
     slug: string;
     excerpt: string;
     content: string;
-    author: string;
+    author: { id: number; name: string } | null;
     category_id: number | null;
     published: boolean;
     views: number;
@@ -41,18 +43,28 @@ interface Article {
     category?: { name: string };
 }
 
+interface ArticleForm {
+    title: string;
+    excerpt: string;
+    content: string;
+    author_name: string;
+    published: boolean;
+    category_id: number | null;
+}
+
 export default function AdminArticles() {
     const [articles, setArticles] = useState<Article[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingArticle, setEditingArticle] = useState<Article | null>(null);
-    const [formData, setFormData] = useState<Partial<Article>>({
+    const [formData, setFormData] = useState<ArticleForm>({
         title: "",
         excerpt: "",
         content: "",
-        author: "",
-        published: true
+        author_name: "",
+        published: true,
+        category_id: null,
     });
 
     useEffect(() => {
@@ -74,36 +86,56 @@ export default function AdminArticles() {
     const handleOpenModal = (article: Article | null = null) => {
         if (article) {
             setEditingArticle(article);
-            setFormData(article);
+            setFormData({
+                title: article.title,
+                excerpt: article.excerpt,
+                content: article.content,
+                author_name: article.author?.name || "",
+                published: article.published,
+                category_id: article.category_id,
+            });
         } else {
             setEditingArticle(null);
             setFormData({
                 title: "",
                 excerpt: "",
                 content: "",
-                author: "",
-                published: true
+                author_name: "",
+                published: true,
+                category_id: null,
             });
         }
         setIsModalOpen(true);
     };
 
+    const { toast } = useToast();
+
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         console.log("Saving article:", formData);
         setIsModalOpen(false);
+        toast(
+            editingArticle
+                ? "Article mis à jour avec succès"
+                : "Article créé avec succès",
+        );
     };
 
-    const filteredArticles = articles.filter(a =>
-        a.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        a.author.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredArticles = articles.filter(
+        (a) =>
+            a.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (a.author?.name || "")
+                .toLowerCase()
+                .includes(searchTerm.toLowerCase()),
     );
 
     return (
         <div className="space-y-10 pb-20">
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-4xl font-black text-[#212121] tracking-tight">Gestion des Articles</h1>
+                    <h1 className="text-4xl font-black text-[#212121] tracking-tight">
+                        Gestion des Articles
+                    </h1>
                     <p className="text-[#757575] font-medium mt-2 flex items-center">
                         <FileText className="w-4 h-4 mr-2 text-[#00B8D4]" />
                         {articles.length} publications enregistrées
@@ -137,224 +169,325 @@ export default function AdminArticles() {
                         <thead>
                             <tr className="text-[10px] font-black text-[#9E9E9E] uppercase tracking-[0.2em] bg-[#F8FAFC]">
                                 <th className="px-8 py-6">Article</th>
-                                <th className="px-8 py-6">Auteur & Catégorie</th>
+                                <th className="px-8 py-6">
+                                    Auteur & Catégorie
+                                </th>
                                 <th className="px-8 py-6">Performance</th>
                                 <th className="px-8 py-6">Statut</th>
-                                <th className="px-8 py-6 text-right">Actions</th>
+                                <th className="px-8 py-6 text-right">
+                                    Actions
+                                </th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#F1F5F9]">
-                            {isLoading ? (
-                                [1, 2, 3].map(i => (
-                                    <tr key={i} className="animate-pulse">
-                                        <td colSpan={5} className="px-8 py-10 bg-white/50" />
-                                    </tr>
-                                ))
-                            ) : filteredArticles.map((article) => (
-                                <tr key={article.id} className="hover:bg-[#F8FAFC]/50 smooth-animation group">
-                                    <td className="px-8 py-6">
-                                        <div className="flex items-center space-x-5">
-                                            <div className="w-16 h-16 rounded-2xl bg-[#F8FAFC] flex items-center justify-center overflow-hidden border border-[#F1F5F9] shrink-0">
-                                                {article.image ? (
-                                                    <img src={article.image} alt="" className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <FileText className="w-6 h-6 text-[#9E9E9E]" />
-                                                )}
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p className="font-black text-[#212121] text-sm group-hover:text-[#00B8D4] smooth-animation leading-tight mb-1 truncate">{article.title}</p>
-                                                <div className="flex items-center text-[10px] font-bold text-[#9E9E9E] uppercase tracking-widest">
-                                                    <Calendar className="w-3 h-3 mr-1.5" />
-                                                    {new Date(article.created_at).toLocaleDateString()}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-8 py-6">
-                                        <div className="space-y-2">
-                                            <div className="flex items-center space-x-2">
-                                                <div className="w-6 h-6 rounded-lg bg-[#00B8D4]/10 text-[#00B8D4] flex items-center justify-center text-[10px] font-black">
-                                                    {article.author.charAt(0)}
-                                                </div>
-                                                <span className="text-xs font-bold text-[#212121]">{article.author}</span>
-                                            </div>
-                                            <div className="flex items-center text-[10px] font-black text-[#9E9E9E] uppercase tracking-widest">
-                                                <Tag className="w-3 h-3 mr-1.5 text-[#00B8D4]" />
-                                                {article.category?.name || "Non catégorisé"}
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-8 py-6">
-                                        <div className="flex items-center bg-[#F8FAFC] px-4 py-2 rounded-xl w-fit">
-                                            <TrendingUp className="w-4 h-4 mr-2 text-emerald-500" />
-                                            <span className="text-sm font-black text-[#212121]">{article.views}</span>
-                                            <span className="text-[10px] font-bold text-[#9E9E9E] ml-2 uppercase tracking-widest">vues</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-8 py-6">
-                                        <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-                                            article.published
-                                            ? "bg-emerald-50 text-emerald-600 border-emerald-100"
-                                            : "bg-amber-50 text-amber-600 border-amber-100"
-                                        }`}>
-                                            <div className={`w-1.5 h-1.5 rounded-full mr-2 ${article.published ? "bg-emerald-500" : "bg-amber-500"}`} />
-                                            {article.published ? "Publié" : "Brouillon"}
-                                        </span>
-                                    </td>
-                                    <td className="px-8 py-6 text-right">
-                                        <div className="flex items-center justify-end space-x-2">
-                                            <button
-                                                onClick={() => handleOpenModal(article)}
-                                                className="p-3 bg-[#F8FAFC] text-[#616161] hover:bg-[#00B8D4]/10 hover:text-[#00B8D4] rounded-xl smooth-animation"
-                                            >
-                                                <Edit2 className="w-4 h-4" />
-                                            </button>
-                                            <button className="p-3 bg-[#F8FAFC] text-[#616161] hover:bg-red-50 hover:text-red-500 rounded-xl smooth-animation">
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                            <a
-                                                href={`/blog/${article.slug}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="p-3 bg-[#F8FAFC] text-[#616161] hover:bg-emerald-50 hover:text-emerald-600 rounded-xl smooth-animation"
-                                            >
-                                                <ExternalLink className="w-4 h-4" />
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                            {isLoading
+                                ? [1, 2, 3].map((i) => (
+                                      <tr key={i} className="animate-pulse">
+                                          <td
+                                              colSpan={5}
+                                              className="px-8 py-10 bg-white/50"
+                                          />
+                                      </tr>
+                                  ))
+                                : filteredArticles.map((article) => (
+                                      <tr
+                                          key={article.id}
+                                          className="hover:bg-[#F8FAFC]/50 smooth-animation group"
+                                      >
+                                          <td className="px-8 py-6">
+                                              <div className="flex items-center space-x-5">
+                                                  <div className="w-16 h-16 rounded-2xl bg-[#F8FAFC] flex items-center justify-center overflow-hidden border border-[#F1F5F9] shrink-0">
+                                                      {article.image ? (
+                                                          <img
+                                                              src={
+                                                                  article.image
+                                                              }
+                                                              alt=""
+                                                              className="w-full h-full object-cover"
+                                                          />
+                                                      ) : (
+                                                          <FileText className="w-6 h-6 text-[#9E9E9E]" />
+                                                      )}
+                                                  </div>
+                                                  <div className="min-w-0">
+                                                      <p className="font-black text-[#212121] text-sm group-hover:text-[#00B8D4] smooth-animation leading-tight mb-1 truncate">
+                                                          {article.title}
+                                                      </p>
+                                                      <div className="flex items-center text-[10px] font-bold text-[#9E9E9E] uppercase tracking-widest">
+                                                          <Calendar className="w-3 h-3 mr-1.5" />
+                                                          {new Date(
+                                                              article.created_at,
+                                                          ).toLocaleDateString()}
+                                                      </div>
+                                                  </div>
+                                              </div>
+                                          </td>
+                                          <td className="px-8 py-6">
+                                              <div className="space-y-2">
+                                                  <div className="flex items-center space-x-2">
+                                                      <div className="w-6 h-6 rounded-lg bg-[#00B8D4]/10 text-[#00B8D4] flex items-center justify-center text-[10px] font-black">
+                                                          {(
+                                                              article.author
+                                                                  ?.name || "?"
+                                                          ).charAt(0)}
+                                                      </div>
+                                                      <span className="text-xs font-bold text-[#212121]">
+                                                          {article.author
+                                                              ?.name ||
+                                                              "Inconnu"}
+                                                      </span>
+                                                  </div>
+                                                  <div className="flex items-center text-[10px] font-black text-[#9E9E9E] uppercase tracking-widest">
+                                                      <Tag className="w-3 h-3 mr-1.5 text-[#00B8D4]" />
+                                                      {article.category?.name ||
+                                                          "Non catégorisé"}
+                                                  </div>
+                                              </div>
+                                          </td>
+                                          <td className="px-8 py-6">
+                                              <div className="flex items-center bg-[#F8FAFC] px-4 py-2 rounded-xl w-fit">
+                                                  <TrendingUp className="w-4 h-4 mr-2 text-emerald-500" />
+                                                  <span className="text-sm font-black text-[#212121]">
+                                                      {article.views}
+                                                  </span>
+                                                  <span className="text-[10px] font-bold text-[#9E9E9E] ml-2 uppercase tracking-widest">
+                                                      vues
+                                                  </span>
+                                              </div>
+                                          </td>
+                                          <td className="px-8 py-6">
+                                              <span
+                                                  className={`inline-flex items-center px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                                                      article.published
+                                                          ? "bg-emerald-50 text-emerald-600 border-emerald-100"
+                                                          : "bg-amber-50 text-amber-600 border-amber-100"
+                                                  }`}
+                                              >
+                                                  <div
+                                                      className={`w-1.5 h-1.5 rounded-full mr-2 ${article.published ? "bg-emerald-500" : "bg-amber-500"}`}
+                                                  />
+                                                  {article.published
+                                                      ? "Publié"
+                                                      : "Brouillon"}
+                                              </span>
+                                          </td>
+                                          <td className="px-8 py-6 text-right">
+                                              <div className="flex items-center justify-end space-x-2">
+                                                  <button
+                                                      onClick={() =>
+                                                          handleOpenModal(
+                                                              article,
+                                                          )
+                                                      }
+                                                      className="p-3 bg-[#F8FAFC] text-[#616161] hover:bg-[#00B8D4]/10 hover:text-[#00B8D4] rounded-xl smooth-animation"
+                                                  >
+                                                      <Edit2 className="w-4 h-4" />
+                                                  </button>
+                                                  <button className="p-3 bg-[#F8FAFC] text-[#616161] hover:bg-red-50 hover:text-red-500 rounded-xl smooth-animation">
+                                                      <Trash2 className="w-4 h-4" />
+                                                  </button>
+                                                  <a
+                                                      href={`/blog/${article.slug}`}
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                      className="p-3 bg-[#F8FAFC] text-[#616161] hover:bg-emerald-50 hover:text-emerald-600 rounded-xl smooth-animation"
+                                                  >
+                                                      <ExternalLink className="w-4 h-4" />
+                                                  </a>
+                                              </div>
+                                          </td>
+                                      </tr>
+                                  ))}
                         </tbody>
                     </table>
                 </div>
             </div>
 
             {/* Article Modal */}
-            <AnimatePresence>
-                {isModalOpen && (
-                    <>
-                        <motion.div
-                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                            onClick={() => setIsModalOpen(false)}
-                            className="fixed inset-0 bg-[#212121]/60 backdrop-blur-md z-[60]"
-                        />
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="fixed inset-0 m-auto w-full max-w-4xl h-fit max-h-[90vh] bg-white rounded-[3rem] shadow-2xl z-[70] overflow-hidden flex flex-col"
-                        >
-                            <div className="p-10 flex items-center justify-between border-b border-[#F1F5F9] shrink-0">
-                                <div>
-                                    <h2 className="text-2xl font-black text-[#212121]">{editingArticle ? "Modifier l'Article" : "Nouvel Article Blog"}</h2>
-                                    <p className="text-xs text-[#9E9E9E] font-bold uppercase tracking-widest mt-1">Partagez votre expertise</p>
-                                </div>
-                                <button onClick={() => setIsModalOpen(false)} className="p-4 bg-[#F8FAFC] text-[#212121] hover:bg-red-50 hover:text-red-500 rounded-2xl smooth-animation">
-                                    <X className="w-5 h-5" />
-                                </button>
-                            </div>
-
-                            <form onSubmit={handleSave} className="p-10 space-y-8 overflow-y-auto custom-scrollbar">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
-                                            <Type className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" /> Titre de l'Article
-                                        </label>
-                                        <input
-                                            type="text"
-                                            required
-                                            value={formData.title}
-                                            onChange={(e) => setFormData({...formData, title: e.target.value})}
-                                            className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
-                                            placeholder="Ex: 10 conseils pour votre chantier"
-                                        />
+            <ModalPortal>
+                <AnimatePresence>
+                    {isModalOpen && (
+                        <>
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setIsModalOpen(false)}
+                                className="fixed inset-0 bg-[#212121]/60 backdrop-blur-md z-[60]"
+                            />
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                                className="fixed inset-0 m-auto w-full max-w-4xl h-fit max-h-[90vh] bg-white rounded-[3rem] shadow-2xl z-[70] overflow-hidden flex flex-col"
+                            >
+                                <div className="p-10 flex items-center justify-between border-b border-[#F1F5F9] shrink-0">
+                                    <div>
+                                        <h2 className="text-2xl font-black text-[#212121]">
+                                            {editingArticle
+                                                ? "Modifier l'Article"
+                                                : "Nouvel Article Blog"}
+                                        </h2>
+                                        <p className="text-xs text-[#9E9E9E] font-bold uppercase tracking-widest mt-1">
+                                            Partagez votre expertise
+                                        </p>
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
-                                            <User className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" /> Auteur
-                                        </label>
-                                        <input
-                                            type="text"
-                                            required
-                                            value={formData.author}
-                                            onChange={(e) => setFormData({...formData, author: e.target.value})}
-                                            className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
-                                            placeholder="Nom de l'auteur"
-                                        />
-                                    </div>
+                                    <button
+                                        onClick={() => setIsModalOpen(false)}
+                                        className="p-4 bg-[#F8FAFC] text-[#212121] hover:bg-red-50 hover:text-red-500 rounded-2xl smooth-animation"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
-                                        <AlignLeft className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" /> Extrait (Résumé)
-                                    </label>
-                                    <textarea
-                                        rows={2}
-                                        required
-                                        value={formData.excerpt}
-                                        onChange={(e) => setFormData({...formData, excerpt: e.target.value})}
-                                        className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation resize-none"
-                                        placeholder="Un court résumé pour la liste des articles..."
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
-                                        <FileText className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" /> Contenu de l'Article
-                                    </label>
-                                    <textarea
-                                        rows={10}
-                                        required
-                                        value={formData.content}
-                                        onChange={(e) => setFormData({...formData, content: e.target.value})}
-                                        className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation resize-none font-mono"
-                                        placeholder="Écrivez votre article ici (Markdown supporté)..."
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
-                                            <ImageIcon className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" /> Image de Couverture
-                                        </label>
-                                        <div className="w-full h-40 bg-[#F8FAFC] border-2 border-dashed border-[#E2E8F0] rounded-[2rem] flex flex-col items-center justify-center text-[#9E9E9E] hover:border-[#00B8D4] hover:bg-[#00B8D4]/5 smooth-animation cursor-pointer group">
-                                            <Plus className="w-8 h-8 mb-2 group-hover:scale-110 smooth-animation" />
-                                            <span className="text-[10px] font-black uppercase tracking-widest">Choisir une image</span>
+                                <form
+                                    onSubmit={handleSave}
+                                    className="p-10 space-y-8 overflow-y-auto custom-scrollbar"
+                                >
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
+                                                <Type className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
+                                                Titre de l'Article
+                                            </label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={formData.title}
+                                                onChange={(e) =>
+                                                    setFormData({
+                                                        ...formData,
+                                                        title: e.target.value,
+                                                    })
+                                                }
+                                                className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
+                                                placeholder="Ex: 10 conseils pour votre chantier"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
+                                                <User className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
+                                                Auteur
+                                            </label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={formData.author_name}
+                                                onChange={(e) =>
+                                                    setFormData({
+                                                        ...formData,
+                                                        author_name:
+                                                            e.target.value,
+                                                    })
+                                                }
+                                                className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
+                                                placeholder="Nom de l'auteur"
+                                            />
                                         </div>
                                     </div>
-                                    <div className="flex flex-col justify-center">
-                                        <div className="flex items-center justify-between p-6 bg-[#F8FAFC] rounded-3xl">
-                                            <div className="flex items-center space-x-3">
-                                                <div className={`w-12 h-6 rounded-full p-1 smooth-animation cursor-pointer ${formData.published ? "bg-[#00B8D4]" : "bg-[#E2E8F0]"}`} onClick={() => setFormData({...formData, published: !formData.published})}>
-                                                    <div className={`w-4 h-4 bg-white rounded-full shadow-sm smooth-animation ${formData.published ? "translate-x-6" : "translate-x-0"}`} />
+
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
+                                            <AlignLeft className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
+                                            Extrait (Résumé)
+                                        </label>
+                                        <textarea
+                                            rows={2}
+                                            required
+                                            value={formData.excerpt}
+                                            onChange={(e) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    excerpt: e.target.value,
+                                                })
+                                            }
+                                            className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation resize-none"
+                                            placeholder="Un court résumé pour la liste des articles..."
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
+                                            <FileText className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
+                                            Contenu de l'Article
+                                        </label>
+                                        <textarea
+                                            rows={10}
+                                            required
+                                            value={formData.content}
+                                            onChange={(e) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    content: e.target.value,
+                                                })
+                                            }
+                                            className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation resize-none font-mono"
+                                            placeholder="Écrivez votre article ici (Markdown supporté)..."
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
+                                                <ImageIcon className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
+                                                Image de Couverture
+                                            </label>
+                                            <div className="w-full h-40 bg-[#F8FAFC] border-2 border-dashed border-[#E2E8F0] rounded-[2rem] flex flex-col items-center justify-center text-[#9E9E9E] hover:border-[#00B8D4] hover:bg-[#00B8D4]/5 smooth-animation cursor-pointer group">
+                                                <Plus className="w-8 h-8 mb-2 group-hover:scale-110 smooth-animation" />
+                                                <span className="text-[10px] font-black uppercase tracking-widest">
+                                                    Choisir une image
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col justify-center">
+                                            <div className="flex items-center justify-between p-6 bg-[#F8FAFC] rounded-3xl">
+                                                <div className="flex items-center space-x-3">
+                                                    <div
+                                                        className={`w-12 h-6 rounded-full p-1 smooth-animation cursor-pointer ${formData.published ? "bg-[#00B8D4]" : "bg-[#E2E8F0]"}`}
+                                                        onClick={() =>
+                                                            setFormData({
+                                                                ...formData,
+                                                                published:
+                                                                    !formData.published,
+                                                            })
+                                                        }
+                                                    >
+                                                        <div
+                                                            className={`w-4 h-4 bg-white rounded-full shadow-sm smooth-animation ${formData.published ? "translate-x-6" : "translate-x-0"}`}
+                                                        />
+                                                    </div>
+                                                    <span className="text-xs font-black text-[#212121] uppercase tracking-widest">
+                                                        Publier immédiatement
+                                                    </span>
                                                 </div>
-                                                <span className="text-xs font-black text-[#212121] uppercase tracking-widest">Publier immédiatement</span>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="flex items-center space-x-4 pt-4 shrink-0">
-                                    <button
-                                        type="submit"
-                                        className="flex-1 flex items-center justify-center py-5 px-6 bg-[#212121] text-white rounded-[1.5rem] shadow-xl shadow-[#212121]/10 hover:bg-[#00B8D4] hover:-translate-y-1 smooth-animation font-black text-xs uppercase tracking-widest"
-                                    >
-                                        <Save className="w-5 h-5 mr-3" />
-                                        Enregistrer
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsModalOpen(false)}
-                                        className="flex-1 flex items-center justify-center py-5 px-6 bg-white border border-[#E2E8F0] text-[#616161] rounded-[1.5rem] hover:bg-red-50 hover:text-red-500 hover:border-red-100 smooth-animation font-black text-xs uppercase tracking-widest"
-                                    >
-                                        Annuler
-                                    </button>
-                                </div>
-                            </form>
-                        </motion.div>
-                    </>
-                )}
-            </AnimatePresence>
+                                    <div className="flex items-center space-x-4 pt-4 shrink-0">
+                                        <button
+                                            type="submit"
+                                            className="flex-1 flex items-center justify-center py-5 px-6 bg-[#212121] text-white rounded-[1.5rem] shadow-xl shadow-[#212121]/10 hover:bg-[#00B8D4] hover:-translate-y-1 smooth-animation font-black text-xs uppercase tracking-widest"
+                                        >
+                                            <Save className="w-5 h-5 mr-3" />
+                                            Enregistrer
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setIsModalOpen(false)
+                                            }
+                                            className="flex-1 flex items-center justify-center py-5 px-6 bg-white border border-[#E2E8F0] text-[#616161] rounded-[1.5rem] hover:bg-red-50 hover:text-red-500 hover:border-red-100 smooth-animation font-black text-xs uppercase tracking-widest"
+                                        >
+                                            Annuler
+                                        </button>
+                                    </div>
+                                </form>
+                            </motion.div>
+                        </>
+                    )}
+                </AnimatePresence>
+            </ModalPortal>
         </div>
     );
 }

@@ -7,19 +7,23 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Project extends Model
 {
-    protected $fillable = [ 
-        'title', 
-        'slug', 
-        'description', 
-        'details', 
-        'location', 
-        'year', 
-        'metrics', 
-        'challenges', 
-        'technical_details', 
-        'gallery', 
-        'is_featured', 
-        'category_id'
+    protected $fillable = [
+        'title',
+        'slug',
+        'image',
+        'description',
+        'details',
+        'location',
+        'year',
+        'client_name',
+        'metrics',
+        'challenges',
+        'technical_details',
+        'gallery',
+        'is_featured',
+        'category_id',
+        'is_published',
+        'views',
     ];
 
     protected $casts = [
@@ -28,7 +32,13 @@ class Project extends Model
         'technical_details' => 'array',
         'gallery' => 'array',
         'is_featured' => 'boolean',
+        'is_published' => 'boolean',
     ];
+
+    public function scopePublished($query)
+    {
+        return $query->where('is_published', true);
+    }
 
     public function category()
     {

@@ -20,7 +20,7 @@ class TagsController extends Controller
     {
         $tag->loadCount('articles');
         $articles = $tag->articles()
-            ->where('published', true)
+            ->where('is_published', true)
             ->orderBy('published_at', 'desc')
             ->paginate(12);
 

@@ -15,11 +15,29 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
+        // Admin user
         User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+            'name' => 'Admin MAC',
+            'email' => 'admin@mac-construction.com',
+            'role' => 'admin',
+        ]);
+
+        $this->call([
+            SiteSettingsSeeder::class,
+            HeroSlidesSeeder::class,
+            PageSectionsSeeder::class,
+            ServicesSeeder::class,       // Creates project categories too
+            ProjectsSeeder::class,       // Depends on categories
+            ArticlesSeeder::class,       // Creates blog categories, tags, author users
+            TeamSeeder::class,
+            TestimonialsSeeder::class,   // Depends on projects
+            TimelineSeeder::class,
+            StatsSeeder::class,
+            ValuesSeeder::class,
+            CertificationsSeeder::class,
+            OfficesSeeder::class,
+            SocialLinksSeeder::class,
+            JobListingsSeeder::class,
         ]);
     }
 }

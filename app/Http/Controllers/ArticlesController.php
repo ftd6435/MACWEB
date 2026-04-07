@@ -9,8 +9,8 @@ class ArticlesController extends Controller
 {
     public function index()
     {
-        $articles = Article::with('category', 'tags')
-            ->where('published', true)
+        $articles = Article::with('category', 'tags', 'author')
+            ->where('is_published', true)
             ->orderBy('published_at', 'desc')
             ->paginate(12);
 
@@ -19,9 +19,9 @@ class ArticlesController extends Controller
 
     public function show($slug)
     {
-        $article = Article::with('category', 'tags', 'comments')
+        $article = Article::with('category', 'tags', 'comments', 'author')
             ->where('slug', $slug)
-            ->where('published', true)
+            ->where('is_published', true)
             ->firstOrFail();
 
         $article->increment('views');
@@ -34,11 +34,16 @@ class ArticlesController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'slug' => 'required|string|unique:articles',
-            'excerpt' => 'required|string',
+            'excerpt' => 'nullable|string',
             'content' => 'required|string',
-            'author' => 'required|string',
+            'image' => 'nullable|string',
+            'author_id' => 'required|exists:users,id',
             'category_id' => 'nullable|exists:categories,id',
-            'published' => 'boolean',
+            'read_time' => 'nullable|integer',
+            'is_published' => 'boolean',
+            'is_featured' => 'boolean',
+            'toc' => 'nullable|array',
+            'published_at' => 'nullable|date',
         ]);
 
         $article = Article::create($validated);
@@ -47,18 +52,24 @@ class ArticlesController extends Controller
             $article->tags()->sync($request->tags);
         }
 
-        return response()->json($article, 201);
+        return response()->json($article->load('category', 'tags', 'author'), 201);
     }
 
     public function update(Request $request, Article $article)
     {
         $validated = $request->validate([
             'title' => 'string|max:255',
-            'excerpt' => 'string',
+            'slug' => 'string|unique:articles,slug,'.$article->id,
+            'excerpt' => 'nullable|string',
             'content' => 'string',
-            'author' => 'string',
+            'image' => 'nullable|string',
+            'author_id' => 'exists:users,id',
             'category_id' => 'nullable|exists:categories,id',
-            'published' => 'boolean',
+            'read_time' => 'nullable|integer',
+            'is_published' => 'boolean',
+            'is_featured' => 'boolean',
+            'toc' => 'nullable|array',
+            'published_at' => 'nullable|date',
         ]);
 
         $article->update($validated);
@@ -67,7 +78,7 @@ class ArticlesController extends Controller
             $article->tags()->sync($request->tags);
         }
 
-        return response()->json($article);
+        return response()->json($article->load('category', 'tags', 'author'));
     }
 
     public function destroy(Article $article)

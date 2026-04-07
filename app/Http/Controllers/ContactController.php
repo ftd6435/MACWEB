@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ContactSubmission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class ContactController extends Controller
 {
@@ -14,16 +14,14 @@ class ContactController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email',
             'phone' => 'nullable|string|max:20',
-            'subject' => 'required|string|max:255',
+            'project_type' => 'nullable|string|max:255',
+            'project_location' => 'nullable|string|max:255',
             'message' => 'required|string|max:5000',
         ]);
 
-        // Send email to admin
-        // Mail::to(config('mail.from.address'))
-        //     ->send(new ContactFormMail($validated));
+        ContactSubmission::create($validated);
 
-        // Log the contact for now
-        Log::info('Contact form submitted', $validated);
+        Log::info('Contact form submitted', ['email' => $validated['email']]);
 
         return response()->json([
             'success' => true,

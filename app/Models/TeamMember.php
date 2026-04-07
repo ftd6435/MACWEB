@@ -9,5 +9,13 @@ class TeamMember extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'role', 'bio', 'image', 'linkedin', 'is_active', 'order'];
+    protected $fillable = [
+        'name', 'role', 'bio', 'image',
+        'linkedin', 'email', 'twitter',
+        'is_active', 'order',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
 }

@@ -11,7 +11,8 @@ use Illuminate\Notifications\Notifiable;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory;
+    use Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -20,9 +21,17 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'avatar',
+        'bio',
+        'role',
         'email',
         'password',
     ];
+
+    public function articles()
+    {
+        return $this->hasMany(Article::class, 'author_id');
+    }
 
     /**
      * The attributes that should be hidden for serialization.

@@ -3,30 +3,37 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Article extends Model
 {
     protected $fillable = [
-        'title', 
-        'slug', 
-        'excerpt', 
-        'content', 
-        'image', 
-        'author_id', 
-        'category_id', 
-        'read_time', 
-        'is_published', 
-        'is_featured', 
-        'toc'
+        'title',
+        'slug',
+        'excerpt',
+        'content',
+        'image',
+        'author_id',
+        'category_id',
+        'read_time',
+        'is_published',
+        'is_featured',
+        'toc',
+        'published_at',
+        'views',
     ];
 
     protected $casts = [
         'is_published' => 'boolean',
         'is_featured' => 'boolean',
         'toc' => 'array',
+        'published_at' => 'datetime',
     ];
+
+    public function scopePublished($query)
+    {
+        return $query->where('is_published', true);
+    }
 
     public function author()
     {
@@ -42,7 +49,6 @@ class Article extends Model
     {
         return $this->belongsToMany(Tag::class);
     }
-
 
     public function comments(): MorphMany
     {
