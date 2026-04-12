@@ -1,31 +1,27 @@
 import React, { useState, useEffect } from "react";
+import ReactQuill from "react-quill-new";
+import "react-quill-new/dist/quill.snow.css";
 import {
     Plus,
     Search,
-    Filter,
     Edit2,
     Trash2,
-    Eye,
     TrendingUp,
     Calendar,
     User,
     FileText,
-    CheckCircle,
-    XCircle,
-    MoreHorizontal,
     Save,
     X,
     Type,
     AlignLeft,
     Image as ImageIcon,
     Tag,
-    ChevronLeft,
-    ChevronRight,
     ExternalLink,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import ModalPortal from "../../components/ModalPortal";
+import ImageUploader from "../../components/ImageUploader";
 import { useToast } from "../../services/ToastContext";
 
 interface Article {
@@ -50,6 +46,7 @@ interface ArticleForm {
     author_name: string;
     published: boolean;
     category_id: number | null;
+    image: string | null;
 }
 
 export default function AdminArticles() {
@@ -65,6 +62,7 @@ export default function AdminArticles() {
         author_name: "",
         published: true,
         category_id: null,
+        image: null,
     });
 
     useEffect(() => {
@@ -93,6 +91,7 @@ export default function AdminArticles() {
                 author_name: article.author?.name || "",
                 published: article.published,
                 category_id: article.category_id,
+                image: article.image || null,
             });
         } else {
             setEditingArticle(null);
@@ -103,6 +102,7 @@ export default function AdminArticles() {
                 author_name: "",
                 published: true,
                 category_id: null,
+                image: null,
             });
         }
         setIsModalOpen(true);
@@ -411,19 +411,50 @@ export default function AdminArticles() {
                                             <FileText className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
                                             Contenu de l'Article
                                         </label>
-                                        <textarea
-                                            rows={10}
-                                            required
-                                            value={formData.content}
-                                            onChange={(e) =>
-                                                setFormData({
-                                                    ...formData,
-                                                    content: e.target.value,
-                                                })
-                                            }
-                                            className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation resize-none font-mono"
-                                            placeholder="Écrivez votre article ici (Markdown supporté)..."
-                                        />
+                                        <div className="quill-admin-wrapper bg-[#F8FAFC] rounded-2xl overflow-hidden">
+                                            <ReactQuill
+                                                theme="snow"
+                                                value={formData.content}
+                                                onChange={(value) =>
+                                                    setFormData({
+                                                        ...formData,
+                                                        content: value,
+                                                    })
+                                                }
+                                                modules={{
+                                                    toolbar: [
+                                                        [
+                                                            {
+                                                                header: [
+                                                                    1,
+                                                                    2,
+                                                                    3,
+                                                                    false,
+                                                                ],
+                                                            },
+                                                        ],
+                                                        [
+                                                            "bold",
+                                                            "italic",
+                                                            "underline",
+                                                            "strike",
+                                                        ],
+                                                        [
+                                                            { list: "ordered" },
+                                                            { list: "bullet" },
+                                                        ],
+                                                        [
+                                                            "blockquote",
+                                                            "code-block",
+                                                        ],
+                                                        ["link", "image"],
+                                                        [{ align: [] }],
+                                                        ["clean"],
+                                                    ],
+                                                }}
+                                                placeholder="Rédigez le contenu de votre article..."
+                                            />
+                                        </div>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -432,12 +463,16 @@ export default function AdminArticles() {
                                                 <ImageIcon className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
                                                 Image de Couverture
                                             </label>
-                                            <div className="w-full h-40 bg-[#F8FAFC] border-2 border-dashed border-[#E2E8F0] rounded-[2rem] flex flex-col items-center justify-center text-[#9E9E9E] hover:border-[#00B8D4] hover:bg-[#00B8D4]/5 smooth-animation cursor-pointer group">
-                                                <Plus className="w-8 h-8 mb-2 group-hover:scale-110 smooth-animation" />
-                                                <span className="text-[10px] font-black uppercase tracking-widest">
-                                                    Choisir une image
-                                                </span>
-                                            </div>
+                                            <ImageUploader
+                                                value={formData.image}
+                                                onChange={(url) =>
+                                                    setFormData({
+                                                        ...formData,
+                                                        image: url,
+                                                    })
+                                                }
+                                                label="Choisir une image"
+                                            />
                                         </div>
                                         <div className="flex flex-col justify-center">
                                             <div className="flex items-center justify-between p-6 bg-[#F8FAFC] rounded-3xl">
