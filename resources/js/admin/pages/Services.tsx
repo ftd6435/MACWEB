@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ModalPortal from "../../components/ModalPortal";
+import ConfirmDialog from "../../components/ConfirmDialog";
 import { useToast } from "../../services/ToastContext";
 import {
     Plus,
@@ -26,13 +27,13 @@ import {
     ArrowUpDown,
 } from "lucide-react";
 import axios from "axios";
+import ImageUploader from "../../components/ImageUploader";
 
 interface Service {
     id: number;
     title: string;
     slug: string;
     description: string;
-    icon: string;
     image: string | null;
     features: string[];
     is_active: boolean;
@@ -46,10 +47,11 @@ export default function AdminServices() {
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingService, setEditingService] = useState<Service | null>(null);
+    const [pendingDelete, setPendingDelete] = useState<Service | null>(null);
     const [formData, setFormData] = useState<Partial<Service>>({
         title: "",
         description: "",
-        icon: "HardHat",
+        image: null,
         is_active: true,
         features: [],
     });
@@ -61,9 +63,8 @@ export default function AdminServices() {
     const fetchServices = async () => {
         setIsLoading(true);
         try {
-            // In a real app, this would be /api/admin/services
-            const response = await axios.get("/api/cms/global");
-            setServices(response.data.services || []);
+            const response = await axios.get("/api/admin/services");
+            setServices(response.data || []);
         } catch (error) {
             console.error("Failed to fetch services", error);
         } finally {
@@ -80,7 +81,7 @@ export default function AdminServices() {
             setFormData({
                 title: "",
                 description: "",
-                icon: "HardHat",
+                image: null,
                 is_active: true,
                 features: [],
             });
@@ -92,13 +93,57 @@ export default function AdminServices() {
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("Saving service:", formData);
-        setIsModalOpen(false);
-        toast(
-            editingService
-                ? "Service mis à jour avec succès"
-                : "Service créé avec succès",
-        );
+        try {
+            await axios.get("/sanctum/csrf-cookie");
+
+            const payload = {
+                title: formData.title,
+                description: formData.description,
+                image: formData.image,
+                features: formData.features || [],
+                is_active: formData.is_active ?? true,
+                order: formData.order ?? 0,
+            };
+
+            if (editingService) {
+                await axios.put(`/api/admin/services/${editingService.id}`, payload);
+            } else {
+                await axios.post("/api/admin/services", payload);
+            }
+
+            await fetchServices();
+            setIsModalOpen(false);
+            toast(
+                editingService
+                    ? "Service mis à jour avec succès"
+                    : "Service créé avec succès",
+            );
+        } catch (err: any) {
+            const msg =
+                err.response?.data?.message ||
+                err.response?.data?.errors?.title?.[0] ||
+                "Échec de l'enregistrement";
+            toast(msg, "error");
+        }
+    };
+
+    const handleDelete = async (service: Service) => {
+        setPendingDelete(service);
+    };
+
+    const confirmDelete = async () => {
+        if (!pendingDelete) return;
+        try {
+            await axios.get("/sanctum/csrf-cookie");
+            await axios.delete(`/api/admin/services/${pendingDelete.id}`);
+            await fetchServices();
+            toast("Service supprimé");
+            setPendingDelete(null);
+        } catch (err: any) {
+            const msg =
+                err.response?.data?.message || "Échec de la suppression";
+            toast(msg, "error");
+        }
     };
 
     const filteredServices = services.filter(
@@ -273,7 +318,12 @@ export default function AdminServices() {
                                         >
                                             <Edit2 className="w-4 h-4" />
                                         </button>
-                                        <button className="p-3 bg-[#F8FAFC] text-[#616161] hover:bg-red-50 hover:text-red-500 rounded-xl smooth-animation">
+                                        <button
+                                            onClick={() =>
+                                                handleDelete(service)
+                                            }
+                                            className="p-3 bg-[#F8FAFC] text-[#616161] hover:bg-red-50 hover:text-red-500 rounded-xl smooth-animation"
+                                        >
                                             <Trash2 className="w-4 h-4" />
                                         </button>
                                     </div>
@@ -325,55 +375,24 @@ export default function AdminServices() {
                                     onSubmit={handleSave}
                                     className="p-10 space-y-8 overflow-y-auto custom-scrollbar"
                                 >
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
-                                                <Type className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
-                                                Titre du Service
-                                            </label>
-                                            <input
-                                                type="text"
-                                                required
-                                                value={formData.title}
-                                                onChange={(e) =>
-                                                    setFormData({
-                                                        ...formData,
-                                                        title: e.target.value,
-                                                    })
-                                                }
-                                                className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
-                                                placeholder="Ex: Construction Résidentielle"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
-                                                <Layers className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
-                                                Icône
-                                            </label>
-                                            <select
-                                                className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation appearance-none"
-                                                value={formData.icon}
-                                                onChange={(e) =>
-                                                    setFormData({
-                                                        ...formData,
-                                                        icon: e.target.value,
-                                                    })
-                                                }
-                                            >
-                                                <option value="HardHat">
-                                                    Casque (Construction)
-                                                </option>
-                                                <option value="Home">
-                                                    Maison (Habitat)
-                                                </option>
-                                                <option value="Building">
-                                                    Immeuble (Bureau)
-                                                </option>
-                                                <option value="Tool">
-                                                    Outil (Maintenance)
-                                                </option>
-                                            </select>
-                                        </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
+                                            <Type className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
+                                            Titre du Service
+                                        </label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={formData.title}
+                                            onChange={(e) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    title: e.target.value,
+                                                })
+                                            }
+                                            className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
+                                            placeholder="Ex: Construction Résidentielle"
+                                        />
                                     </div>
 
                                     <div className="space-y-2">
@@ -401,12 +420,16 @@ export default function AdminServices() {
                                             <ImageIcon className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
                                             Image de Couverture
                                         </label>
-                                        <div className="w-full h-48 bg-[#F8FAFC] border-2 border-dashed border-[#E2E8F0] rounded-[2rem] flex flex-col items-center justify-center text-[#9E9E9E] hover:border-[#00B8D4] hover:bg-[#00B8D4]/5 smooth-animation cursor-pointer group">
-                                            <Plus className="w-8 h-8 mb-3 group-hover:scale-110 smooth-animation" />
-                                            <span className="text-xs font-black uppercase tracking-widest">
-                                                Ajouter une image
-                                            </span>
-                                        </div>
+                                        <ImageUploader
+                                            value={formData.image ?? null}
+                                            onChange={(url) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    image: url,
+                                                })
+                                            }
+                                            label="Choisir une image"
+                                        />
                                     </div>
 
                                     <div className="flex items-center justify-between p-6 bg-[#F8FAFC] rounded-3xl">
@@ -455,6 +478,20 @@ export default function AdminServices() {
                     )}
                 </AnimatePresence>
             </ModalPortal>
+
+            <ConfirmDialog
+                open={!!pendingDelete}
+                title="Supprimer le service ?"
+                message={
+                    pendingDelete
+                        ? `Cette action supprimera "${pendingDelete.title}".`
+                        : ""
+                }
+                confirmText="Supprimer"
+                cancelText="Annuler"
+                onCancel={() => setPendingDelete(null)}
+                onConfirm={confirmDelete}
+            />
         </div>
     );
 }

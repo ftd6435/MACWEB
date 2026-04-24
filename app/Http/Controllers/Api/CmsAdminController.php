@@ -3,15 +3,20 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Mail\BrandedOutboundMessage;
+use App\Models\Article;
 use App\Models\Certification;
+use App\Models\Comment;
 use App\Models\ContactSubmission;
 use App\Models\HeroSlide;
 use App\Models\JobApplication;
 use App\Models\JobListing;
+use App\Models\Media;
 use App\Models\NewsletterSubscriber;
 use App\Models\Office;
 use App\Models\PageSection;
 use App\Models\PartnershipRequest;
+use App\Models\Project;
 use App\Models\Service;
 use App\Models\SiteSetting;
 use App\Models\SocialLink;
@@ -19,12 +24,34 @@ use App\Models\Stat;
 use App\Models\TeamMember;
 use App\Models\Testimonial;
 use App\Models\TimelineMilestone;
+use App\Models\User;
 use App\Models\Value;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class CmsAdminController extends Controller
 {
+    private function uniqueJobListingSlug(string $baseSlug, ?int $ignoreId = null): string
+    {
+        $baseSlug = trim($baseSlug);
+        $slug = $baseSlug !== '' ? $baseSlug : Str::uuid()->toString();
+
+        $i = 2;
+        while (
+            JobListing::where('slug', $slug)
+                ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
+                ->exists()
+        ) {
+            $slug = $baseSlug.'-'.$i;
+            $i++;
+        }
+
+        return $slug;
+    }
+
     // ─── Services ────────────────────────────────────────────
     public function services()
     {
@@ -130,7 +157,7 @@ class CmsAdminController extends Controller
     // ─── Testimonials ────────────────────────────────────────
     public function testimonials()
     {
-        return response()->json(Testimonial::orderBy('order')->get());
+        return response()->json(Testimonial::with('project')->orderBy('order')->get());
     }
 
     public function storeTestimonial(Request $request)
@@ -142,7 +169,7 @@ class CmsAdminController extends Controller
             'content' => 'required|string',
             'image' => 'nullable|string',
             'rating' => 'nullable|integer|min:1|max:5',
-            'project_id' => 'nullable|exists:projects,id',
+            'project_id' => 'required|exists:projects,id',
             'is_active' => 'boolean',
             'order' => 'nullable|integer',
         ]);
@@ -159,7 +186,7 @@ class CmsAdminController extends Controller
             'content' => 'string',
             'image' => 'nullable|string',
             'rating' => 'nullable|integer|min:1|max:5',
-            'project_id' => 'nullable|exists:projects,id',
+            'project_id' => 'sometimes|required|exists:projects,id',
             'is_active' => 'boolean',
             'order' => 'nullable|integer',
         ]);
@@ -572,7 +599,7 @@ class CmsAdminController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'slug' => 'required|string|unique:job_listings',
+            'slug' => 'nullable|string|unique:job_listings',
             'department' => 'nullable|string',
             'location' => 'nullable|string',
             'contract_type' => 'nullable|string',
@@ -585,6 +612,9 @@ class CmsAdminController extends Controller
             'expires_at' => 'nullable|date',
         ]);
 
+        $baseSlug = $validated['slug'] ?? Str::slug($validated['title']);
+        $validated['slug'] = $this->uniqueJobListingSlug($baseSlug);
+
         return response()->json(JobListing::create($validated), 201);
     }
 
@@ -592,7 +622,7 @@ class CmsAdminController extends Controller
     {
         $validated = $request->validate([
             'title' => 'string|max:255',
-            'slug' => 'string|unique:job_listings,slug,'.$jobListing->id,
+            'slug' => 'nullable|string|unique:job_listings,slug,'.$jobListing->id,
             'department' => 'nullable|string',
             'location' => 'nullable|string',
             'contract_type' => 'nullable|string',
@@ -604,6 +634,13 @@ class CmsAdminController extends Controller
             'published_at' => 'nullable|date',
             'expires_at' => 'nullable|date',
         ]);
+
+        if (array_key_exists('slug', $validated) && $validated['slug'] !== null) {
+            $validated['slug'] = $this->uniqueJobListingSlug(
+                $validated['slug'],
+                $jobListing->id,
+            );
+        }
         $jobListing->update($validated);
 
         return response()->json($jobListing);
@@ -630,7 +667,7 @@ class CmsAdminController extends Controller
     public function updateJobApplication(Request $request, JobApplication $jobApplication)
     {
         $validated = $request->validate([
-            'status' => 'required|string|in:new,reviewed,shortlisted,rejected,hired',
+            'status' => 'required|string|in:new,reviewed,invited_interview,interviewed,rejected,rejected_after_interview,hired',
             'admin_notes' => 'nullable|string',
         ]);
         $jobApplication->update($validated);
@@ -643,6 +680,178 @@ class CmsAdminController extends Controller
         $jobApplication->delete();
 
         return response()->json(null, 204);
+    }
+
+    public function downloadJobApplicationResume(JobApplication $jobApplication)
+    {
+        if (! $jobApplication->resume_path) {
+            return response()->json(['message' => 'Aucun CV disponible'], 404);
+        }
+
+        $relativePath = (string) $jobApplication->resume_path;
+        if (str_starts_with($relativePath, 'private/')) {
+            $relativePath = substr($relativePath, strlen('private/'));
+        }
+
+        $disk = Storage::disk('local'); // storage/app/private
+        if (! $disk->exists($relativePath)) {
+            return response()->json(['message' => 'Fichier introuvable'], 404);
+        }
+
+        $fullPath = $disk->path($relativePath);
+        $ext = pathinfo($fullPath, PATHINFO_EXTENSION);
+        $safeName = 'cv-'.$jobApplication->id.($ext ? '.'.$ext : '');
+
+        return response()->download($fullPath, $safeName);
+    }
+
+    public function sendLeadEmail(Request $request)
+    {
+        $validated = $request->validate([
+            'source' => 'required|string|in:contact,career,partnership',
+            'id' => 'required|integer',
+            'to' => 'required|email|max:255',
+            'subject' => 'required|string|max:255',
+            'body' => 'required|string|max:10000',
+        ], [
+            'to.required' => "L'email destinataire est obligatoire.",
+            'to.email' => "L'email destinataire doit être valide.",
+            'subject.required' => "L'objet est obligatoire.",
+            'body.required' => 'Le message est obligatoire.',
+        ]);
+
+        $hrEmail = SiteSetting::where('key', 'hr_email')->value('value')
+            ?: SiteSetting::where('key', 'main_email')->value('value');
+        $companyName = SiteSetting::where('key', 'company_name')->value('value')
+            ?: config('app.name', 'MAC');
+
+        $appUrl = rtrim((string) config('app.url', ''), '/');
+        $logoPath = SiteSetting::where('key', 'header_logo')->value('value') ?: '/img/logo.png';
+        $logoUrl = null;
+        if ($appUrl) {
+            if (is_string($logoPath) && preg_match('/^https?:\/\//i', $logoPath)) {
+                $logoUrl = $logoPath;
+            } elseif (is_string($logoPath)) {
+                $logoUrl = str_starts_with($logoPath, '/')
+                    ? $appUrl.$logoPath
+                    : $appUrl.'/'.$logoPath;
+            }
+        }
+
+        $leadName = null;
+        if ($validated['source'] === 'career') {
+            $leadName = JobApplication::where('id', $validated['id'])->value('name');
+        } elseif ($validated['source'] === 'contact') {
+            $leadName = ContactSubmission::where('id', $validated['id'])->value('name');
+        } else {
+            $leadName = PartnershipRequest::where('id', $validated['id'])->value('contact_person');
+        }
+
+        Mail::to($validated['to'])->queue(
+            new BrandedOutboundMessage(
+                $validated['subject'],
+                $validated['body'],
+                $companyName,
+                $logoUrl,
+                null,
+                $hrEmail,
+                $companyName,
+            )
+        );
+
+        return response()->json(['success' => true]);
+    }
+
+    public function sendJobListingRejectionEmails(Request $request, JobListing $jobListing)
+    {
+        $validated = $request->validate([
+            'include_after_interview' => 'nullable|boolean',
+        ]);
+
+        $includeAfterInterview = (bool) ($validated['include_after_interview'] ?? true);
+
+        $companyName = SiteSetting::where('key', 'company_name')->value('value')
+            ?: config('app.name', 'MAC');
+        $hrEmail = SiteSetting::where('key', 'hr_email')->value('value')
+            ?: SiteSetting::where('key', 'main_email')->value('value');
+
+        $appUrl = rtrim((string) config('app.url', ''), '/');
+        $logoPath = SiteSetting::where('key', 'header_logo')->value('value') ?: '/img/logo.png';
+        $logoUrl = null;
+        if ($appUrl) {
+            if (is_string($logoPath) && preg_match('/^https?:\/\//i', $logoPath)) {
+                $logoUrl = $logoPath;
+            } elseif (is_string($logoPath)) {
+                $logoUrl = str_starts_with($logoPath, '/')
+                    ? $appUrl.$logoPath
+                    : $appUrl.'/'.$logoPath;
+            }
+        }
+
+        $statuses = ['rejected'];
+        if ($includeAfterInterview) {
+            $statuses[] = 'rejected_after_interview';
+        }
+
+        $query = JobApplication::where('job_listing_id', $jobListing->id)
+            ->whereIn('status', $statuses)
+            ->whereNull('rejection_emailed_at');
+
+        $total = (clone $query)->count();
+        if ($total === 0) {
+            return response()->json([
+                'success' => true,
+                'queued' => 0,
+                'message' => 'Aucune candidature rejetée à notifier pour cette offre.',
+            ]);
+        }
+
+        $subject = "Suite à votre candidature — {$jobListing->title}";
+        $heading = 'Suite à votre candidature';
+
+        $queued = 0;
+        $now = now();
+
+        $query->orderBy('id')->chunkById(100, function ($apps) use (
+            &$queued,
+            $companyName,
+            $logoUrl,
+            $hrEmail,
+            $subject,
+            $heading,
+            $jobListing,
+            $now
+        ) {
+            foreach ($apps as $app) {
+                $body =
+                    "Bonjour {$app->name},\n\n"
+                    ."Nous vous remercions d’avoir pris le temps de postuler au poste « {$jobListing->title} ».\n\n"
+                    ."Après étude attentive de votre candidature, nous ne pouvons malheureusement pas y donner une suite favorable à ce stade.\n\n"
+                    ."Nous vous remercions pour l’intérêt porté à {$companyName} et vous souhaitons pleine réussite dans vos démarches.\n\n"
+                    ."Cordialement,\n"
+                    .'Équipe RH';
+
+                Mail::to($app->email)->queue(
+                    new BrandedOutboundMessage(
+                        $subject,
+                        $body,
+                        $companyName,
+                        $logoUrl,
+                        $heading,
+                        $hrEmail,
+                        $companyName,
+                    )
+                );
+                $app->rejection_emailed_at = $now;
+                $app->save();
+                $queued++;
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'queued' => $queued,
+        ]);
     }
 
     // ─── Contact Submissions (Admin read-only + status) ──────
@@ -715,5 +924,48 @@ class CmsAdminController extends Controller
         $partnershipRequest->delete();
 
         return response()->json(null, 204);
+    }
+
+    public function leadsUnreadCounts()
+    {
+        return response()->json([
+            'contact' => ContactSubmission::where('status', 'new')->count(),
+            'career' => JobApplication::where('status', 'new')->count(),
+            'partnership' => PartnershipRequest::where('status', 'new')->count(),
+        ]);
+    }
+
+    public function dashboardMetrics()
+    {
+        $startOfMonth = Carbon::now()->startOfMonth();
+
+        return response()->json([
+            'articles' => [
+                'total' => Article::count(),
+                'this_month' => Article::where('created_at', '>=', $startOfMonth)->count(),
+            ],
+            'projects' => [
+                'total' => Project::count(),
+                'published' => Project::where('is_published', true)->count(),
+            ],
+            'comments' => [
+                'total' => Comment::count(),
+                'pending' => Comment::where('approved', false)->count(),
+            ],
+            'media' => [
+                'total' => Media::count(),
+            ],
+            'leads' => [
+                'new' => [
+                    'contact' => ContactSubmission::where('status', 'new')->count(),
+                    'career' => JobApplication::where('status', 'new')->count(),
+                    'partnership' => PartnershipRequest::where('status', 'new')->count(),
+                ],
+            ],
+            'users' => [
+                'total' => User::count(),
+                'active' => User::where('is_active', true)->count(),
+            ],
+        ]);
     }
 }

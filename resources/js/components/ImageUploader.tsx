@@ -40,6 +40,8 @@ export default function ImageUploader({
         setUploading(true);
 
         try {
+            await axios.get("/sanctum/csrf-cookie");
+
             const formData = new FormData();
             formData.append("file", file);
 
@@ -49,9 +51,15 @@ export default function ImageUploader({
 
             onChange(data.url);
         } catch (err: any) {
+            const raw = err.response?.data;
+            const fallbackFromString =
+                typeof raw === "string" && raw.trim().length > 0
+                    ? raw
+                    : null;
             const msg =
                 err.response?.data?.message ||
                 err.response?.data?.errors?.file?.[0] ||
+                fallbackFromString ||
                 "Échec de l'envoi";
             setError(msg);
         } finally {

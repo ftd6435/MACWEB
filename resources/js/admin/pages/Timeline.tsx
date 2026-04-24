@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ModalPortal from "../../components/ModalPortal";
+import ConfirmDialog from "../../components/ConfirmDialog";
 import { useToast } from "../../services/ToastContext";
 import {
     Plus,
@@ -34,6 +35,7 @@ export default function AdminTimeline() {
     const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(
         null,
     );
+    const [pendingDelete, setPendingDelete] = useState<Milestone | null>(null);
     const [formData, setFormData] = useState<Partial<Milestone>>({
         year: "",
         title: "",
@@ -48,8 +50,8 @@ export default function AdminTimeline() {
     const fetchTimeline = async () => {
         setIsLoading(true);
         try {
-            const response = await axios.get("/api/cms/about");
-            setMilestones(response.data.timeline || []);
+            const response = await axios.get("/api/admin/timeline");
+            setMilestones(response.data || []);
         } catch (error) {
             console.error("Failed to fetch timeline", error);
         } finally {
@@ -77,13 +79,59 @@ export default function AdminTimeline() {
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("Saving milestone:", formData);
-        setIsModalOpen(false);
-        toast(
-            editingMilestone
-                ? "Événement mis à jour avec succès"
-                : "Événement créé avec succès",
-        );
+        try {
+            await axios.get("/sanctum/csrf-cookie");
+
+            const payload = {
+                year: formData.year,
+                title: formData.title,
+                description: formData.description,
+                icon: formData.icon,
+                order: formData.order ?? 0,
+            };
+
+            if (editingMilestone) {
+                await axios.put(
+                    `/api/admin/timeline/${editingMilestone.id}`,
+                    payload,
+                );
+            } else {
+                await axios.post("/api/admin/timeline", payload);
+            }
+
+            await fetchTimeline();
+            setIsModalOpen(false);
+            toast(
+                editingMilestone
+                    ? "Événement mis à jour avec succès"
+                    : "Événement créé avec succès",
+            );
+        } catch (err: any) {
+            const msg =
+                err.response?.data?.message ||
+                err.response?.data?.errors?.title?.[0] ||
+                "Échec de l'enregistrement";
+            toast(msg, "error");
+        }
+    };
+
+    const handleDelete = async (milestone: Milestone) => {
+        setPendingDelete(milestone);
+    };
+
+    const confirmDelete = async () => {
+        if (!pendingDelete) return;
+        try {
+            await axios.get("/sanctum/csrf-cookie");
+            await axios.delete(`/api/admin/timeline/${pendingDelete.id}`);
+            await fetchTimeline();
+            toast("Événement supprimé");
+            setPendingDelete(null);
+        } catch (err: any) {
+            const msg =
+                err.response?.data?.message || "Échec de la suppression";
+            toast(msg, "error");
+        }
     };
 
     return (
@@ -170,7 +218,12 @@ export default function AdminTimeline() {
                                             >
                                                 <Edit2 className="w-5 h-5" />
                                             </button>
-                                            <button className="p-4 bg-[#F8FAFC] text-[#616161] hover:bg-red-50 hover:text-red-500 rounded-2xl smooth-animation">
+                                            <button
+                                                onClick={() =>
+                                                    handleDelete(milestone)
+                                                }
+                                                className="p-4 bg-[#F8FAFC] text-[#616161] hover:bg-red-50 hover:text-red-500 rounded-2xl smooth-animation"
+                                            >
                                                 <Trash2 className="w-5 h-5" />
                                             </button>
                                         </div>
@@ -308,6 +361,20 @@ export default function AdminTimeline() {
                     )}
                 </AnimatePresence>
             </ModalPortal>
+
+            <ConfirmDialog
+                open={!!pendingDelete}
+                title="Supprimer l'événement ?"
+                message={
+                    pendingDelete
+                        ? `Cette action supprimera "${pendingDelete.title}".`
+                        : ""
+                }
+                confirmText="Supprimer"
+                cancelText="Annuler"
+                onCancel={() => setPendingDelete(null)}
+                onConfirm={confirmDelete}
+            />
         </div>
     );
 }

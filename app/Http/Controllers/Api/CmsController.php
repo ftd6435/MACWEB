@@ -40,9 +40,10 @@ class CmsController extends Controller
             'sections' => PageSection::forPage('home')->get()->keyBy('section_key'),
             'services' => Service::where('is_active', true)->orderBy('order')->take(4)->get(),
             'testimonials' => Testimonial::where('is_active', true)->orderBy('order')->get(),
-            'featured_projects' => Project::published()->where('is_featured', true)->with('category')->take(6)->get(),
+            'featured_projects' => Project::published()->where('is_featured', true)->with(['category', 'service'])->take(6)->get(),
             'recent_articles' => Article::where('is_published', true)->orderBy('published_at', 'desc')->with(['category', 'author'])->take(3)->get(),
             'stats' => Stat::where('group', 'home')->orderBy('order')->get(),
+            'home_features' => Stat::where('group', 'home_features')->orderBy('order')->get(),
         ]);
     }
 
@@ -111,6 +112,7 @@ class CmsController extends Controller
                 })
                 ->orderBy('published_at', 'desc')
                 ->get(),
+            'benefits' => Stat::where('group', 'careers_benefits')->orderBy('order')->get(),
         ]);
     }
 
@@ -119,6 +121,8 @@ class CmsController extends Controller
         return response()->json([
             'hero_slides' => HeroSlide::forPage('partnership')->get(),
             'sections' => PageSection::forPage('partnership')->get()->keyBy('section_key'),
+            'why_partner_items' => Stat::where('group', 'partnership_advantages')->orderBy('order')->get(),
+            'partners' => Stat::where('group', 'partners')->orderBy('order')->get(),
         ]);
     }
 }

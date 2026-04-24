@@ -21,4 +21,9 @@ class Service extends Model
         'process_steps' => 'array',
         'is_active' => 'boolean',
     ];
+
+    public function projects()
+    {
+        return $this->hasMany(Project::class);
+    }
 }

@@ -17,8 +17,80 @@ import {
     Zap
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import axios from "axios";
+
+type ServiceItem = {
+    id: number;
+    title: string;
+    slug: string;
+    description: string;
+    icon: string | null;
+    image: string | null;
+    features: string[] | null;
+    is_active: boolean;
+    order: number;
+};
 
 export default function Services() {
+    const [heroTitle, setHeroTitle] = React.useState("Nos Services");
+    const [heroDescription, setHeroDescription] = React.useState(
+        "Découvrez l'ensemble de nos compétences en construction et forage, conçues pour répondre à tous vos besoins avec une excellence métier.",
+    );
+    const [heroImage, setHeroImage] = React.useState<string | null>(
+        "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=2000&auto=format&fit=crop",
+    );
+    const [overlayOpacity, setOverlayOpacity] = React.useState(60);
+    const [services, setServices] = React.useState<ServiceItem[]>([]);
+
+    React.useEffect(() => {
+        const load = async () => {
+            try {
+                const res = await axios.get("/api/cms/services");
+                const hero = Array.isArray(res.data?.hero_slides)
+                    ? res.data.hero_slides[0]
+                    : null;
+                if (hero?.title) setHeroTitle(String(hero.title));
+                if (hero?.description)
+                    setHeroDescription(String(hero.description));
+                if (hero?.image) setHeroImage(String(hero.image));
+                if (Array.isArray(res.data?.services)) {
+                    setServices(
+                        (res.data.services as ServiceItem[]).filter(
+                            (s) => s && s.is_active !== false,
+                        ),
+                    );
+                }
+                if (
+                    typeof hero?.overlay_opacity === "number" &&
+                    Number.isFinite(hero.overlay_opacity)
+                ) {
+                    setOverlayOpacity(
+                        Math.max(0, Math.min(100, hero.overlay_opacity)),
+                    );
+                }
+            } catch {
+                return;
+            }
+        };
+        load();
+    }, []);
+
+    const renderServiceIcon = (iconName?: string | null) => {
+        const icons: Record<string, JSX.Element> = {
+            Home: <Home className="w-10 h-10 text-[#00B8D4]" />,
+            Building2: <Building2 className="w-10 h-10 text-[#00B8D4]" />,
+            Factory: <Factory className="w-10 h-10 text-[#00B8D4]" />,
+            Droplets: <Droplets className="w-10 h-10 text-[#00B8D4]" />,
+            ShieldCheck: <ShieldCheck className="w-10 h-10 text-[#00B8D4]" />,
+            Users: <Users className="w-10 h-10 text-[#00B8D4]" />,
+            Settings: <Settings className="w-10 h-10 text-[#00B8D4]" />,
+            Zap: <Zap className="w-10 h-10 text-[#00B8D4]" />,
+        };
+        return icons[String(iconName || "")] || (
+            <Settings className="w-10 h-10 text-[#00B8D4]" />
+        );
+    };
+
     const mainServices = [
         {
             icon: <Home className="w-10 h-10 text-[#00B8D4]" />,
@@ -42,30 +114,72 @@ export default function Services() {
         },
     ];
 
-    const constructionDetails = [
-        {
-            title: "Construction Résidentielle",
-            desc: "Nous créons des espaces de vie exceptionnels, du logement individuel aux complexes résidentiels de grande envergure. Notre approche intègre l'architecture moderne et le respect des standards internationaux de qualité et de confort.",
-            features: ["Villas et Maisons Individuelles", "Complexes Résidentiels", "Aménagement de Lotissements"],
-            image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=1000&auto=format&fit=crop",
-            link: "/projects?category=Residential"
-        },
-        {
-            title: "Construction Commerciale",
-            desc: "Nous concevons et réalisons des espaces commerciaux qui allient fonctionnalité, esthétique et performance énergétique. Chaque projet est pensé pour optimiser l'expérience utilisateur et la rentabilité.",
-            features: ["Bureaux et Tours d'Affaires", "Centres Commerciaux", "Hôtels et Hospitalité"],
-            image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1000&auto=format&fit=crop",
-            link: "/projects?category=Commercial",
-            reverse: true
-        },
-        {
-            title: "Construction Industrielle",
-            desc: "Nos installations industrielles sont conçues pour répondre aux exigences les plus strictes en termes de sécurité, efficacité et durabilité. Nous maîtrisons les normes internationales et les spécificités techniques.",
-            features: ["Usines et Unités de Production", "Entrepôts et Centres Logistiques", "Infrastructures Spécialisées"],
-            image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=1000&auto=format&fit=crop",
-            link: "/projects?category=Industrial"
-        }
-    ];
+    const servicesForGrid =
+        services.length > 0
+            ? services.map((s) => ({
+                  key: s.slug || String(s.id),
+                  icon: renderServiceIcon(s.icon),
+                  title: s.title,
+                  desc: s.description,
+              }))
+            : mainServices.map((s) => ({ ...s, key: s.title }));
+
+    const serviceDetails =
+        services.length > 0
+            ? services.map((s, idx) => ({
+                  key: s.slug || String(s.id),
+                  title: s.title,
+                  desc: s.description,
+                  features: Array.isArray(s.features)
+                      ? s.features.filter((f) => typeof f === "string" && f.trim() !== "")
+                      : [],
+                  image:
+                      s.image ||
+                      "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=1000&auto=format&fit=crop",
+                  link: "/projects",
+                  reverse: idx % 2 === 1,
+              }))
+            : [
+                  {
+                      key: "residential",
+                      title: "Construction Résidentielle",
+                      desc: "Nous créons des espaces de vie exceptionnels, du logement individuel aux complexes résidentiels de grande envergure. Notre approche intègre l'architecture moderne et le respect des standards internationaux de qualité et de confort.",
+                      features: [
+                          "Villas et Maisons Individuelles",
+                          "Complexes Résidentiels",
+                          "Aménagement de Lotissements",
+                      ],
+                      image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=1000&auto=format&fit=crop",
+                      link: "/projects?category=Residential",
+                      reverse: false,
+                  },
+                  {
+                      key: "commercial",
+                      title: "Construction Commerciale",
+                      desc: "Nous concevons et réalisons des espaces commerciaux qui allient fonctionnalité, esthétique et performance énergétique. Chaque projet est pensé pour optimiser l'expérience utilisateur et la rentabilité.",
+                      features: [
+                          "Bureaux et Tours d'Affaires",
+                          "Centres Commerciaux",
+                          "Hôtels et Hospitalité",
+                      ],
+                      image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1000&auto=format&fit=crop",
+                      link: "/projects?category=Commercial",
+                      reverse: true,
+                  },
+                  {
+                      key: "industrial",
+                      title: "Construction Industrielle",
+                      desc: "Nos installations industrielles sont conçues pour répondre aux exigences les plus strictes en termes de sécurité, efficacité et durabilité. Nous maîtrisons les normes internationales et les spécificités techniques.",
+                      features: [
+                          "Usines et Unités de Production",
+                          "Entrepôts et Centres Logistiques",
+                          "Infrastructures Spécialisées",
+                      ],
+                      image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=1000&auto=format&fit=crop",
+                      link: "/projects?category=Industrial",
+                      reverse: false,
+                  },
+              ];
 
     const workSteps = [
         { num: "1", title: "Consultation Initiale", desc: "Analyse de vos besoins et définition des objectifs du projet." },
@@ -81,12 +195,15 @@ export default function Services() {
             <section className="relative h-[60vh] flex items-center justify-center pt-20">
                 <div className="absolute inset-0 z-0">
                     <img
-                        src="https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=2000&auto=format&fit=crop"
+                        src={heroImage || ""}
                         alt="Services Hero"
                         className="w-full h-full object-cover"
                     />
                     {/* Overlay with Sky Blue Linear Gradient and Blur */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-[#00B8D4]/60 via-[#00B8D4]/30 to-[#212121]/90 backdrop-blur-[2px]"></div>
+                    <div
+                        className="absolute inset-0 bg-gradient-to-b from-[#00B8D4]/60 via-[#00B8D4]/30 to-[#212121]/90 backdrop-blur-[2px]"
+                        style={{ opacity: overlayOpacity / 100 }}
+                    />
                 </div>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
                     <motion.h1
@@ -94,10 +211,10 @@ export default function Services() {
                         animate={{ opacity: 1, y: 0 }}
                         className="text-5xl md:text-6xl font-black text-white mb-6"
                     >
-                        Nos Services
+                        {heroTitle}
                     </motion.h1>
                     <p className="text-xl text-white/80 max-w-3xl mx-auto leading-relaxed">
-                        Découvrez l'ensemble de nos compétences en construction et forage, conçues pour répondre à tous vos besoins avec une excellence métier.
+                        {heroDescription}
                     </p>
                 </div>
             </section>
@@ -110,9 +227,9 @@ export default function Services() {
                         De la construction résidentielle au forage spécialisé, MAC vous accompagne dans tous vos projets avec des solutions sur-mesure et une expertise reconnue à travers l'Afrique.
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {mainServices.map((service, idx) => (
+                        {servicesForGrid.map((service, idx) => (
                             <motion.div
-                                key={idx}
+                                key={service.key}
                                 initial={{ opacity: 0, y: 20 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
@@ -141,8 +258,8 @@ export default function Services() {
                     </div>
 
                     <div className="space-y-32">
-                        {constructionDetails.map((item, idx) => (
-                            <div key={idx} className={`flex flex-col lg:flex-row items-center gap-16 ${item.reverse ? 'lg:flex-row-reverse' : ''}`}>
+                        {serviceDetails.map((item, idx) => (
+                            <div key={item.key} className={`flex flex-col lg:flex-row items-center gap-16 ${item.reverse ? 'lg:flex-row-reverse' : ''}`}>
                                 <motion.div
                                     initial={{ opacity: 0, x: item.reverse ? 50 : -50 }}
                                     whileInView={{ opacity: 1, x: 0 }}
@@ -151,18 +268,20 @@ export default function Services() {
                                 >
                                     <h3 className="text-3xl font-black text-[#212121]">{item.title}</h3>
                                     <p className="text-[#616161] leading-relaxed text-lg">{item.desc}</p>
-                                    <ul className="space-y-4">
-                                        {item.features.map((feature, fIdx) => (
-                                            <li key={fIdx} className="flex items-center space-x-3">
-                                                <div className="w-6 h-6 rounded-full bg-[#00B8D4]/10 flex items-center justify-center">
-                                                    <CheckCircle2 className="w-4 h-4 text-[#00B8D4]" />
-                                                </div>
-                                                <span className="font-bold text-[#212121]">{feature}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
+                                    {item.features.length > 0 && (
+                                        <ul className="space-y-4">
+                                            {item.features.map((feature, fIdx) => (
+                                                <li key={fIdx} className="flex items-center space-x-3">
+                                                    <div className="w-6 h-6 rounded-full bg-[#00B8D4]/10 flex items-center justify-center">
+                                                        <CheckCircle2 className="w-4 h-4 text-[#00B8D4]" />
+                                                    </div>
+                                                    <span className="font-bold text-[#212121]">{feature}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
                                     <Link to={item.link} className="inline-flex items-center text-[#00B8D4] font-black group">
-                                        Voir nos Projets {item.title.split(' ')[1]} <ChevronRight className="ml-2 w-5 h-5 group-hover:translate-x-1 smooth-animation" />
+                                        Voir nos projets <ChevronRight className="ml-2 w-5 h-5 group-hover:translate-x-1 smooth-animation" />
                                     </Link>
                                 </motion.div>
                                 <motion.div
@@ -209,38 +328,11 @@ export default function Services() {
                                     </div>
                                 ))}
                             </div>
-                            <div className="pt-8 border-t border-[#F1F5F9]">
-                                <h4 className="font-black text-[#212121] mb-6 uppercase tracking-widest text-xs">Zones d'Intervention</h4>
-                                <div className="grid grid-cols-2 gap-4">
-                                    {["Sénégal", "Mali", "Guinée", "Côte d'Ivoire"].map((zone, i) => (
-                                        <div key={i} className="flex items-center space-x-2 text-sm font-bold text-[#616161]">
-                                            <MapPin className="w-4 h-4 text-[#00B8D4]" />
-                                            <span>{zone}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
                         </div>
                         <div className="space-y-6">
                             <img src="https://images.unsplash.com/photo-1533241242276-888998064956?q=80&w=1000&auto=format&fit=crop" alt="Forage Rig" className="rounded-[2.5rem] shadow-xl w-full h-[300px] object-cover" />
                             <img src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=1000&auto=format&fit=crop" alt="Mining" className="rounded-[2.5rem] shadow-xl w-full h-[300px] object-cover" />
                         </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {[
-                            { icon: <Settings />, title: "Équipements de Pointe", desc: "Machines de forage de dernière génération adaptées à tous types de terrains." },
-                            { icon: <ShieldCheck />, title: "Normes Internationales", desc: "Certifications ISO et respect strict des standards d'hygiène et sécurité." },
-                            { icon: <Users />, title: "Équipe Experte", desc: "Ingénieurs et techniciens hautement qualifiés avec des années d'expérience terrain." }
-                        ].map((item, i) => (
-                            <div key={i} className="text-center p-8 bg-[#F8FAFC] rounded-3xl border border-[#F1F5F9]">
-                                <div className="w-14 h-14 rounded-full bg-[#00B8D4]/10 text-[#00B8D4] flex items-center justify-center mx-auto mb-6">
-                                    {React.cloneElement(item.icon as React.ReactElement, { className: "w-7 h-7" })}
-                                </div>
-                                <h4 className="font-bold text-[#212121] mb-3">{item.title}</h4>
-                                <p className="text-xs text-[#616161] leading-relaxed">{item.desc}</p>
-                            </div>
-                        ))}
                     </div>
                 </div>
             </section>

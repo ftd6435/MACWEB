@@ -11,6 +11,10 @@ interface User {
     id: number;
     name: string;
     email: string;
+    role?: "super_admin" | "admin" | "editor" | string;
+    avatar?: string | null;
+    bio?: string | null;
+    is_active?: boolean;
 }
 
 interface AuthContextType {
@@ -18,6 +22,7 @@ interface AuthContextType {
     loading: boolean;
     login: (credentials: any) => Promise<void>;
     logout: () => Promise<void>;
+    refreshUser: () => Promise<void>;
     isAuthenticated: boolean;
 }
 
@@ -27,14 +32,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const refreshUser = async () => {
+        const response = await axios.get(`${API_DATA_URL}/user`);
+        setUser(response.data);
+    };
+
     useEffect(() => {
         const checkAuth = async () => {
             try {
-                const response = await axios.get(`${API_DATA_URL}/user`);
-                setUser(response.data);
+                await refreshUser();
             } catch (error: any) {
                 // If 401, user is just not logged in, no need to log as error
-                if (error.response?.status !== 401) {
+                if (![401, 403].includes(error.response?.status)) {
                     console.error("Auth check failed:", error);
                 }
                 setUser(null);
@@ -49,8 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const login = async (credentials: any) => {
         await axios.get(`${API_BASE_URL}/sanctum/csrf-cookie`);
         await axios.post(`${API_DATA_URL}/login`, credentials);
-        const response = await axios.get(`${API_DATA_URL}/user`);
-        setUser(response.data);
+        await refreshUser();
     };
 
     const logout = async () => {
@@ -64,6 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             loading,
             login,
             logout,
+            refreshUser,
             isAuthenticated: !!user
         }}>
             {children}

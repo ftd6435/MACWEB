@@ -11,9 +11,6 @@ import {
     AnimatePresence,
     motion
 } from "framer-motion";
-import {
-    Image as ImageIcon
-} from "lucide-react";
 import Navbar from "./components/Navbar.tsx";
 import Footer from "./components/Footer.tsx";
 import { AuthProvider, useAuth } from "./services/AuthContext.tsx";
@@ -34,6 +31,8 @@ const Partnership = lazy(() => import("./pages/Partnership.tsx"));
 const AdminLayout = lazy(() => import("./admin/AdminLayout.tsx"));
 const Dashboard = lazy(() => import("./admin/pages/Dashboard.tsx"));
 const AdminArticles = lazy(() => import("./admin/pages/Articles.tsx"));
+const AdminCategories = lazy(() => import("./admin/pages/Categories.tsx"));
+const AdminTags = lazy(() => import("./admin/pages/Tags.tsx"));
 const AdminProjects = lazy(() => import("./admin/pages/Projects.tsx"));
 const AdminServices = lazy(() => import("./admin/pages/Services.tsx"));
 const AdminTeam = lazy(() => import("./admin/pages/Team.tsx"));
@@ -42,6 +41,11 @@ const AdminTimeline = lazy(() => import("./admin/pages/Timeline.tsx"));
 const AdminStats = lazy(() => import("./admin/pages/Stats.tsx"));
 const AdminLeads = lazy(() => import("./admin/pages/Leads.tsx"));
 const AdminSettings = lazy(() => import("./admin/pages/Settings.tsx"));
+const AdminMedia = lazy(() => import("./admin/pages/Media.tsx"));
+const AdminJobListings = lazy(() => import("./admin/pages/JobListings.tsx"));
+const AdminOffices = lazy(() => import("./admin/pages/Offices.tsx"));
+const AdminUsers = lazy(() => import("./admin/pages/Users.tsx"));
+const AdminProfile = lazy(() => import("./admin/pages/Profile.tsx"));
 const Login = lazy(() => import("./pages/Login.tsx"));
 
 import "./bootstrap";
@@ -95,15 +99,21 @@ function App() {
                             }>
                                 <Route index element={<Dashboard />} />
                                 <Route path="articles" element={<AdminArticles />} />
+                                <Route path="categories" element={<AdminCategories />} />
+                                <Route path="tags" element={<AdminTags />} />
                                 <Route path="projects" element={<AdminProjects />} />
                                 <Route path="services" element={<AdminServices />} />
                                 <Route path="team" element={<AdminTeam />} />
                                 <Route path="testimonials" element={<AdminTestimonials />} />
                                 <Route path="timeline" element={<AdminTimeline />} />
                                 <Route path="stats" element={<AdminStats />} />
+                                <Route path="offices" element={<AdminOffices />} />
                                 <Route path="leads" element={<AdminLeads />} />
+                                <Route path="job-listings" element={<AdminJobListings />} />
                                 <Route path="settings" element={<AdminSettings />} />
-                                <Route path="media" element={<div className="p-20 text-center"><ImageIcon className="w-20 h-20 mx-auto text-[#00B8D4] mb-6 opacity-20" /><h2 className="text-2xl font-black text-[#212121]">Médiathèque</h2><p className="text-[#616161] font-medium mt-2">Section en cours de développement...</p></div>} />
+                                <Route path="media" element={<AdminMedia />} />
+                                <Route path="users" element={<AdminUsers />} />
+                                <Route path="profile" element={<AdminProfile />} />
                             </Route>
                         </Routes>
                     </Suspense>

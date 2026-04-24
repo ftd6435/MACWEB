@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\Api\AdminUsersController;
 use App\Http\Controllers\Api\CmsAdminController;
 use App\Http\Controllers\Api\CmsController;
+use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\ArticlesController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CategoriesController;
@@ -14,6 +16,7 @@ use App\Http\Controllers\PartnershipController;
 use App\Http\Controllers\ProjectsController;
 use App\Http\Controllers\TagsController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 // Auth routes
@@ -58,7 +61,17 @@ Route::get('/media', [MediaController::class, 'index']);
 // ─── Protected routes (admin) ────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
-        return $request->user();
+        $user = $request->user();
+        if ($user && $user->is_active === false) {
+            Auth::guard('web')->logout();
+
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return response()->json(['message' => 'Compte désactivé.'], 403);
+        }
+
+        return $user;
     });
 
     // Articles CRUD
@@ -166,6 +179,19 @@ Route::middleware('auth:sanctum')->group(function () {
     // Settings
     Route::get('/admin/settings', [CmsAdminController::class, 'settings']);
     Route::put('/admin/settings', [CmsAdminController::class, 'updateSettings']);
+    Route::get('/admin/leads/unread-counts', [CmsAdminController::class, 'leadsUnreadCounts']);
+    Route::get('/admin/dashboard-metrics', [CmsAdminController::class, 'dashboardMetrics']);
+
+    // Profile
+    Route::get('/admin/profile', [ProfileController::class, 'show']);
+    Route::put('/admin/profile', [ProfileController::class, 'update']);
+    Route::put('/admin/profile/password', [ProfileController::class, 'updatePassword']);
+
+    // Users (Admin)
+    Route::get('/admin/users', [AdminUsersController::class, 'index']);
+    Route::post('/admin/users', [AdminUsersController::class, 'store']);
+    Route::put('/admin/users/{user}', [AdminUsersController::class, 'update']);
+    Route::patch('/admin/users/{user}/toggle-active', [AdminUsersController::class, 'toggleActive']);
 
     // ─── CMS Admin: Visitor Submissions (read/manage) ────────
 
@@ -176,8 +202,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Job Applications
     Route::get('/admin/job-applications', [CmsAdminController::class, 'jobApplications']);
+    Route::get('/admin/job-applications/{jobApplication}/resume', [CmsAdminController::class, 'downloadJobApplicationResume']);
     Route::put('/admin/job-applications/{jobApplication}', [CmsAdminController::class, 'updateJobApplication']);
     Route::delete('/admin/job-applications/{jobApplication}', [CmsAdminController::class, 'destroyJobApplication']);
+    Route::post('/admin/leads/send-email', [CmsAdminController::class, 'sendLeadEmail']);
+    Route::post('/admin/job-listings/{jobListing}/send-rejection-emails', [CmsAdminController::class, 'sendJobListingRejectionEmails']);
 
     // Newsletter Subscribers
     Route::get('/admin/newsletter', [CmsAdminController::class, 'newsletterSubscribers']);

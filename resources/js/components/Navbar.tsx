@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
+    const [isOpportunitiesOpen, setIsOpportunitiesOpen] = useState(false);
     const location = useLocation();
 
     // Handle scroll effect
@@ -20,6 +21,7 @@ export default function Navbar() {
     // Close menu on route change
     useEffect(() => {
         setIsOpen(false);
+        setIsOpportunitiesOpen(false);
     }, [location.pathname]);
 
     const isActive = (path: string) => {
@@ -35,6 +37,13 @@ export default function Navbar() {
         { path: "/about", label: "À Propos" },
         { path: "/contact", label: "Contact" },
     ];
+
+    const opportunitiesLinks = [
+        { path: "/careers", label: "Carrières" },
+        { path: "/partnership", label: "Partenariat" },
+    ];
+
+    const opportunitiesActive = opportunitiesLinks.some((l) => isActive(l.path));
 
     return (
         <>
@@ -79,6 +88,36 @@ export default function Navbar() {
                                 )}
                             </Link>
                         ))}
+
+                        <div className="relative group">
+                            <button
+                                type="button"
+                                className={`px-5 py-2 text-[13px] font-black uppercase tracking-widest smooth-animation rounded-xl flex items-center gap-2 ${
+                                    opportunitiesActive
+                                        ? "text-[#00B8D4]"
+                                        : "text-[#212121] hover:text-[#00B8D4]"
+                                }`}
+                            >
+                                Opportunités
+                                <ChevronDown className="w-4 h-4 opacity-70 group-hover:opacity-100 smooth-animation" />
+                            </button>
+
+                            <div className="absolute left-0 top-full mt-3 w-56 bg-white border border-[#F1F5F9] rounded-2xl shadow-2xl p-2 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:translate-y-0 group-focus-within:pointer-events-auto smooth-animation">
+                                {opportunitiesLinks.map((item) => (
+                                    <Link
+                                        key={item.path}
+                                        to={item.path}
+                                        className={`block px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest smooth-animation ${
+                                            isActive(item.path)
+                                                ? "bg-[#00B8D4]/10 text-[#00B8D4]"
+                                                : "text-[#212121] hover:bg-[#F8FAFC] hover:text-[#00B8D4]"
+                                        }`}
+                                    >
+                                        {item.label}
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
                     </nav>
 
                     {/* Actions */}
@@ -92,7 +131,7 @@ export default function Navbar() {
                             to="/contact"
                             className="px-8 py-3.5 bg-[#00B8D4] text-white text-[10px] font-black rounded-xl shadow-xl shadow-[#00B8D4]/20 hover:bg-[#0097A7] hover:-translate-y-0.5 smooth-animation uppercase tracking-[0.15em] flex items-center gap-2"
                         >
-                            Demander un Devis <ArrowRight className="w-3.5 h-3.5" />
+                            Devis <ArrowRight className="w-3.5 h-3.5" />
                         </Link>
                     </div>
 
@@ -160,6 +199,72 @@ export default function Navbar() {
                                     </Link>
                                 </motion.div>
                             ))}
+
+                            <motion.div
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: navLinks.length * 0.05 }}
+                                className="border-b border-[#F1F5F9]"
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setIsOpportunitiesOpen((v) => !v)
+                                    }
+                                    className="w-full py-4 flex items-center justify-between text-lg font-black uppercase tracking-[0.1em] smooth-animation"
+                                >
+                                    <span
+                                        className={
+                                            opportunitiesActive
+                                                ? "text-[#00B8D4]"
+                                                : "text-[#212121] hover:text-[#00B8D4]"
+                                        }
+                                    >
+                                        Opportunités
+                                    </span>
+                                    <ChevronDown
+                                        className={`w-5 h-5 smooth-animation ${
+                                            isOpportunitiesOpen
+                                                ? "rotate-180 text-[#00B8D4]"
+                                                : "text-[#9E9E9E]"
+                                        }`}
+                                    />
+                                </button>
+
+                                <AnimatePresence>
+                                    {isOpportunitiesOpen && (
+                                        <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{
+                                                height: "auto",
+                                                opacity: 1,
+                                            }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            className="overflow-hidden pb-4"
+                                        >
+                                            <div className="space-y-2 pl-2">
+                                                {opportunitiesLinks.map(
+                                                    (item) => (
+                                                        <Link
+                                                            key={item.path}
+                                                            to={item.path}
+                                                            className={`block px-4 py-3 rounded-2xl text-xs font-black uppercase tracking-widest smooth-animation ${
+                                                                isActive(
+                                                                    item.path,
+                                                                )
+                                                                    ? "bg-[#00B8D4]/10 text-[#00B8D4]"
+                                                                    : "bg-[#F8FAFC] text-[#212121] hover:text-[#00B8D4]"
+                                                            }`}
+                                                        >
+                                                            {item.label}
+                                                        </Link>
+                                                    ),
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </motion.div>
                         </div>
 
                         <div className="mt-auto space-y-6 pt-10 border-t border-[#F1F5F9]">

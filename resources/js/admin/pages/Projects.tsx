@@ -25,11 +25,13 @@ import {
     AlertCircle,
     CheckCircle2,
     Minus,
+    HardHat,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import ModalPortal from "../../components/ModalPortal";
 import ImageUploader from "../../components/ImageUploader";
+import ConfirmDialog from "../../components/ConfirmDialog";
 import { useToast } from "../../services/ToastContext";
 
 interface Metric {
@@ -65,6 +67,7 @@ interface Project {
     year: string | null;
     client_name: string | null;
     category_id: number | null;
+    service_id: number | null;
     metrics: Metric[] | null;
     challenges: Challenge[] | null;
     technical_details: TechnicalDetails | null;
@@ -84,6 +87,7 @@ interface ProjectForm {
     client_name: string;
     image: string | null;
     category_id: number | null;
+    service_id: number | null;
     metrics: Metric[];
     challenges: Challenge[];
     technical_details: TechnicalDetails;
@@ -91,6 +95,9 @@ interface ProjectForm {
     is_featured: boolean;
     is_published: boolean;
 }
+
+type Category = { id: number; name: string; type?: string };
+type ServiceItem = { id: number; title: string };
 
 const emptyForm: ProjectForm = {
     title: "",
@@ -100,6 +107,7 @@ const emptyForm: ProjectForm = {
     year: String(new Date().getFullYear()),
     client_name: "",
     category_id: null,
+    service_id: null,
     image: null,
     metrics: [{ label: "", value: "" }],
     challenges: [{ title: "", desc: "", solution: "" }],
@@ -119,6 +127,9 @@ export default function AdminProjects() {
     const [searchTerm, setSearchTerm] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
+    const [pendingDelete, setPendingDelete] = useState<Project | null>(null);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [services, setServices] = useState<ServiceItem[]>([]);
     const [formData, setFormData] = useState<ProjectForm>({ ...emptyForm });
     const [activeTab, setActiveTab] = useState<
         "general" | "metrics" | "challenges" | "technical" | "gallery"
@@ -126,7 +137,21 @@ export default function AdminProjects() {
 
     useEffect(() => {
         fetchProjects();
+        fetchMeta();
     }, []);
+
+    const fetchMeta = async () => {
+        try {
+            const [catsRes, servicesRes] = await Promise.all([
+                axios.get("/api/categories?type=project,general"),
+                axios.get("/api/admin/services"),
+            ]);
+            setCategories(catsRes.data || []);
+            setServices(servicesRes.data || []);
+        } catch (error) {
+            console.error("Failed to fetch categories/services", error);
+        }
+    };
 
     const fetchProjects = async () => {
         setIsLoading(true);
@@ -151,6 +176,7 @@ export default function AdminProjects() {
                 year: project.year || String(new Date().getFullYear()),
                 client_name: project.client_name || "",
                 category_id: project.category_id,
+                service_id: project.service_id,
                 image: project.image || null,
                 metrics: project.metrics?.length
                     ? project.metrics
@@ -181,13 +207,66 @@ export default function AdminProjects() {
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("Saving project:", formData);
-        setIsModalOpen(false);
-        toast(
-            editingProject
-                ? "Projet mis à jour avec succès"
-                : "Projet créé avec succès",
-        );
+        try {
+            await axios.get("/sanctum/csrf-cookie");
+
+            const payload = {
+                title: formData.title,
+                description: formData.description,
+                details: formData.details,
+                location: formData.location,
+                year: formData.year,
+                client_name: formData.client_name,
+                category_id: formData.category_id,
+                service_id: formData.service_id,
+                image: formData.image,
+                metrics: formData.metrics,
+                challenges: formData.challenges,
+                technical_details: formData.technical_details,
+                gallery: formData.gallery,
+                is_featured: formData.is_featured,
+                is_published: formData.is_published,
+            };
+
+            if (editingProject) {
+                await axios.put(`/api/projects/${editingProject.id}`, payload);
+            } else {
+                await axios.post("/api/projects", payload);
+            }
+
+            await fetchProjects();
+            setIsModalOpen(false);
+            toast(
+                editingProject
+                    ? "Projet mis à jour avec succès"
+                    : "Projet créé avec succès",
+            );
+        } catch (err: any) {
+            const msg =
+                err.response?.data?.message ||
+                err.response?.data?.errors?.title?.[0] ||
+                "Échec de l'enregistrement";
+            toast(msg, "error");
+        }
+    };
+
+    const handleDelete = async (project: Project) => {
+        setPendingDelete(project);
+    };
+
+    const confirmDelete = async () => {
+        if (!pendingDelete) return;
+        try {
+            await axios.get("/sanctum/csrf-cookie");
+            await axios.delete(`/api/projects/${pendingDelete.id}`);
+            await fetchProjects();
+            toast("Projet supprimé");
+            setPendingDelete(null);
+        } catch (err: any) {
+            const msg =
+                err.response?.data?.message || "Échec de la suppression";
+            toast(msg, "error");
+        }
     };
 
     const filteredProjects = projects.filter(
@@ -300,12 +379,17 @@ export default function AdminProjects() {
                                           >
                                               <Edit2 className="w-4 h-4" />
                                           </button>
-                                          <button className="p-3 bg-[#F8FAFC] text-[#616161] hover:bg-red-50 hover:text-red-500 rounded-xl smooth-animation">
+                                          <button
+                                              onClick={() =>
+                                                  handleDelete(project)
+                                              }
+                                              className="p-3 bg-[#F8FAFC] text-[#616161] hover:bg-red-50 hover:text-red-500 rounded-xl smooth-animation"
+                                          >
                                               <Trash2 className="w-4 h-4" />
                                           </button>
                                       </div>
                                       <a
-                                          href={`/projects/${project.id}`}
+                                          href={`/projects/${project.slug}`}
                                           target="_blank"
                                           rel="noopener noreferrer"
                                           className="p-3 bg-[#F8FAFC] text-[#616161] hover:bg-emerald-50 hover:text-emerald-600 rounded-xl smooth-animation"
@@ -446,7 +530,7 @@ export default function AdminProjects() {
                                                             })
                                                         }
                                                         className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
-                                                        placeholder="Dakar, Sénégal"
+                                                        placeholder="Conakry, Guinée"
                                                     />
                                                 </div>
                                             </div>
@@ -490,8 +574,49 @@ export default function AdminProjects() {
                                                             })
                                                         }
                                                         className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
-                                                        placeholder="Groupe Immobilier Dakar"
+                                                        placeholder="Groupe Immobilier Conakry"
                                                     />
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
+                                                        <HardHat className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />
+                                                        Service
+                                                    </label>
+                                                    <select
+                                                        required
+                                                        value={
+                                                            formData.service_id ||
+                                                            ""
+                                                        }
+                                                        onChange={(e) =>
+                                                            setFormData({
+                                                                ...formData,
+                                                                service_id: e
+                                                                    .target
+                                                                    .value
+                                                                    ? Number(
+                                                                          e
+                                                                              .target
+                                                                              .value,
+                                                                      )
+                                                                    : null,
+                                                            })
+                                                        }
+                                                        className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
+                                                    >
+                                                        <option value="" disabled>
+                                                            Sélectionner un service
+                                                        </option>
+                                                        {services.map((s) => (
+                                                            <option
+                                                                key={s.id}
+                                                                value={s.id}
+                                                            >
+                                                                {s.title}
+                                                            </option>
+                                                        ))}
+                                                    </select>
                                                 </div>
                                                 <div className="space-y-2">
                                                     <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
@@ -522,6 +647,14 @@ export default function AdminProjects() {
                                                         <option value="">
                                                             Sans catégorie
                                                         </option>
+                                                        {categories.map((c) => (
+                                                            <option
+                                                                key={c.id}
+                                                                value={c.id}
+                                                            >
+                                                                {c.name}
+                                                            </option>
+                                                        ))}
                                                     </select>
                                                 </div>
                                             </div>
@@ -1413,6 +1546,20 @@ export default function AdminProjects() {
                     )}
                 </AnimatePresence>
             </ModalPortal>
+
+            <ConfirmDialog
+                open={!!pendingDelete}
+                title="Supprimer le projet ?"
+                message={
+                    pendingDelete
+                        ? `Cette action supprimera "${pendingDelete.title}".`
+                        : ""
+                }
+                confirmText="Supprimer"
+                cancelText="Annuler"
+                onCancel={() => setPendingDelete(null)}
+                onConfirm={confirmDelete}
+            />
         </div>
     );
 }

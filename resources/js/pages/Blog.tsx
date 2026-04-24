@@ -2,8 +2,44 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Search, Calendar, User, ArrowRight, Clock, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
+import axios from "axios";
 
 export default function Blog() {
+    const [heroTitle, setHeroTitle] = useState("Blog & Actualités");
+    const [heroDescription, setHeroDescription] = useState(
+        "Découvrez notre expertise, les dernières innovations BTP et nos conseils pour réussir vos projets de construction.",
+    );
+    const [heroImage, setHeroImage] = useState<string | null>(
+        "https://images.unsplash.com/photo-1518005020250-68594932097c?q=80&w=2000&auto=format&fit=crop",
+    );
+    const [overlayOpacity, setOverlayOpacity] = useState(60);
+
+    React.useEffect(() => {
+        const load = async () => {
+            try {
+                const res = await axios.get("/api/cms/blog");
+                const hero = Array.isArray(res.data?.hero_slides)
+                    ? res.data.hero_slides[0]
+                    : null;
+                if (hero?.title) setHeroTitle(String(hero.title));
+                if (hero?.description)
+                    setHeroDescription(String(hero.description));
+                if (hero?.image) setHeroImage(String(hero.image));
+                if (
+                    typeof hero?.overlay_opacity === "number" &&
+                    Number.isFinite(hero.overlay_opacity)
+                ) {
+                    setOverlayOpacity(
+                        Math.max(0, Math.min(100, hero.overlay_opacity)),
+                    );
+                }
+            } catch {
+                return;
+            }
+        };
+        load();
+    }, []);
+
     const [searchTerm, setSearchTerm] = useState("");
     const [activeCategory, setActiveCategory] = useState("Tous les articles");
 
@@ -87,25 +123,37 @@ export default function Blog() {
 
     return (
         <div className="bg-white min-h-screen">
-            {/* Header */}
-            <section className="bg-[#F8FAFC] py-20 border-b border-[#E2E8F0]">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            {/* Hero Section */}
+            <section className="relative py-20 border-b border-[#E2E8F0] overflow-hidden">
+                <div className="absolute inset-0 z-0">
+                    <img
+                        src={heroImage || ""}
+                        alt="Blog Hero"
+                        className="w-full h-full object-cover"
+                    />
+                    <div
+                        className="absolute inset-0 bg-gradient-to-b from-[#00B8D4]/60 via-[#00B8D4]/30 to-[#212121]/90 backdrop-blur-[2px]"
+                        style={{ opacity: overlayOpacity / 100 }}
+                    />
+                </div>
+
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
                     <motion.h1
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-4xl md:text-5xl font-black text-[#212121] mb-6"
+                        className="text-4xl md:text-5xl font-black text-white mb-6"
                     >
-                        Blog & Actualités
+                        {heroTitle}
                     </motion.h1>
-                    <p className="text-[#616161] max-w-2xl mx-auto text-lg">
-                        Découvrez notre expertise, les dernières innovations BTP et nos conseils pour réussir vos projets de construction.
+                    <p className="text-white/85 max-w-2xl mx-auto text-lg">
+                        {heroDescription}
                     </p>
                     <div className="mt-10 max-w-xl mx-auto relative">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9E9E9E] w-5 h-5" />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 w-5 h-5" />
                         <input
                             type="text"
                             placeholder="Rechercher des articles..."
-                            className="w-full pl-12 pr-4 py-4 bg-white border border-[#E2E8F0] rounded-2xl shadow-sm focus:ring-2 focus:ring-[#00B8D4] focus:border-transparent smooth-animation text-sm"
+                            className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-sm focus:ring-2 focus:ring-[#00B8D4] focus:border-transparent smooth-animation text-sm text-white placeholder:text-white/60"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />

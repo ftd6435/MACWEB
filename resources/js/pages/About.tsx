@@ -22,40 +22,180 @@ import {
     Lightbulb
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import axios from "axios";
 
 export default function About() {
-    const values = [
+    const valueIconMap = {
+        Award,
+        ShieldCheck,
+        Lightbulb,
+        Users,
+        Globe,
+        Heart,
+    };
+
+    type ValueItem = {
+        icon: keyof typeof valueIconMap;
+        title: string;
+        description: string;
+    };
+
+    const defaultHero = {
+        image: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=2000",
+        title: "À Propos de MAC",
+        description:
+            "Découvrez l'histoire, les valeurs et l'équipe qui font de MAC le leader de la construction moderne en Afrique.",
+    };
+
+    const defaultStory = {
+        image: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?q=80&w=1200",
+        paragraphs: [
+            "Fonder en 2009 par une équipe d'ingénieurs et d'architectes passionnés, MAC est né d'une conviction claire : l'Afrique mérite une approche moderne et durable de la construction.",
+            "Notre parcours a été jalonné de défis relevés et d'innovations introduites. Chaque projet nous a permis d'affiner notre expertise et de développer des solutions adaptées aux spécificités du continent africain.",
+            "Aujourd'hui, MAC est bien plus qu'une entreprise de construction ; nous sommes un acteur incontournable de la construction moderne en Afrique, tout en gardant nos valeurs fondamentales d'excellence et d'intégrité.",
+        ],
+    };
+
+    const defaultMission =
+        "Transformer l'Afrique par des constructions d'excellence qui allient innovation architecturale, durabilité environnementale et développement humain tout en créant des espaces qui inspirent et perdurent.";
+
+    const defaultValuesIntro = {
+        title: "Notre Mission et Nos Valeurs",
+        subtitle:
+            "Les principes qui guident chacune de nos actions et définissent notre approche de la construction.",
+    };
+
+    const defaultValues: ValueItem[] = [
         {
-            icon: <Award className="w-6 h-6" />,
+            icon: "Award",
             title: "Excellence",
-            description: "Nous nous engageons à dépasser les attentes à chaque projet, en visant la perfection dans chaque détail.",
+            description:
+                "Nous nous engageons à dépasser les attentes à chaque projet, en visant la perfection dans chaque détail.",
         },
         {
-            icon: <ShieldCheck className="w-6 h-6" />,
+            icon: "ShieldCheck",
             title: "Intégrité",
-            description: "Honnêteté, transparence et respect des engagements sont au cœur de toutes nos relations.",
+            description:
+                "Honnêteté, transparence et respect des engagements sont au cœur de toutes nos relations.",
         },
         {
-            icon: <Lightbulb className="w-6 h-6" />,
+            icon: "Lightbulb",
             title: "Innovation",
-            description: "Nous adoptons les dernières technologies et méthodes pour créer des solutions avant-gardistes.",
+            description:
+                "Nous adoptons les dernières technologies et méthodes pour créer des solutions avant-gardistes.",
         },
         {
-            icon: <Users className="w-6 h-6" />,
+            icon: "Users",
             title: "Engagement Client",
-            description: "Chaque client est unique et mérite une attention personnalisée pour concrétiser sa vision.",
+            description:
+                "Chaque client est unique et mérite une attention personnalisée pour concrétiser sa vision.",
         },
         {
-            icon: <Globe className="w-6 h-6" />,
+            icon: "Globe",
             title: "Durabilité",
-            description: "Nous construisons pour les générations futures en respectant l'environnement et les communautés.",
+            description:
+                "Nous construisons pour les générations futures en respectant l'environnement et les communautés.",
         },
         {
-            icon: <Heart className="w-6 h-6" />,
+            icon: "Heart",
             title: "Esprit d'Équipe",
-            description: "La collaboration et le partage d'expertise sont les piliers de notre succès collectif.",
+            description:
+                "La collaboration et le partage d'expertise sont les piliers de notre succès collectif.",
         },
     ];
+
+    const [hero, setHero] = React.useState(defaultHero);
+    const [story, setStory] = React.useState(defaultStory);
+    const [mission, setMission] = React.useState(defaultMission);
+    const [valuesIntro, setValuesIntro] = React.useState(defaultValuesIntro);
+    const [values, setValues] = React.useState<ValueItem[]>(defaultValues);
+
+    React.useEffect(() => {
+        const load = async () => {
+            try {
+                const res = await axios.get("/api/cms/about");
+                const heroSlide = Array.isArray(res.data?.hero_slides)
+                    ? res.data.hero_slides?.[0]
+                    : null;
+                if (heroSlide) {
+                    setHero({
+                        image: String(heroSlide?.image || defaultHero.image),
+                        title: String(heroSlide?.title || defaultHero.title),
+                        description: String(
+                            heroSlide?.description || defaultHero.description,
+                        ),
+                    });
+                }
+
+                const sections = res.data?.sections || {};
+                const storySection = sections?.story;
+                if (storySection) {
+                    const content = String(storySection?.content || "");
+                    const paragraphs = content
+                        .split(/\n\s*\n/g)
+                        .map((p: string) => p.trim())
+                        .filter((p: string) => p.length > 0);
+                    setStory({
+                        image: String(storySection?.image || defaultStory.image),
+                        paragraphs:
+                            paragraphs.length > 0
+                                ? paragraphs
+                                : defaultStory.paragraphs,
+                    });
+                }
+
+                const missionSection = sections?.mission;
+                if (missionSection?.content) {
+                    setMission(String(missionSection.content));
+                }
+
+                const valuesIntroSection = sections?.values_intro;
+                if (valuesIntroSection) {
+                    setValuesIntro({
+                        title: String(
+                            valuesIntroSection?.title ||
+                                defaultValuesIntro.title,
+                        ),
+                        subtitle: String(
+                            valuesIntroSection?.subtitle ||
+                                defaultValuesIntro.subtitle,
+                        ),
+                    });
+                }
+
+                const apiValues = Array.isArray(res.data?.values)
+                    ? res.data.values
+                    : null;
+                if (apiValues) {
+                    const mapped: ValueItem[] = apiValues
+                        .slice()
+                        .sort(
+                            (a: any, b: any) =>
+                                (a?.order ?? 0) - (b?.order ?? 0),
+                        )
+                        .map((v: any) => {
+                            const iconName = String(v?.icon || "Award");
+                            const safeIcon =
+                                iconName in valueIconMap
+                                    ? (iconName as ValueItem["icon"])
+                                    : "Award";
+                            return {
+                                icon: safeIcon,
+                                title: String(v?.title || ""),
+                                description: String(v?.description || ""),
+                            };
+                        })
+                        .filter(
+                            (v: ValueItem) => v.title.trim().length > 0,
+                        );
+                    if (mapped.length > 0) setValues(mapped);
+                }
+            } catch {
+                return;
+            }
+        };
+        load();
+    }, []);
 
     const timeline = [
         {
@@ -120,7 +260,7 @@ export default function About() {
             <section className="relative h-[60vh] flex items-center justify-center overflow-hidden">
                 <div className="absolute inset-0">
                     <img
-                        src="https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=2000"
+                        src={hero.image}
                         alt="MAC Team"
                         className="w-full h-full object-cover"
                     />
@@ -133,7 +273,7 @@ export default function About() {
                         animate={{ opacity: 1, y: 0 }}
                         className="text-4xl md:text-6xl font-black text-white mb-6"
                     >
-                        À Propos de MAC
+                        {hero.title}
                     </motion.h1>
                     <motion.p
                         initial={{ opacity: 0, y: 20 }}
@@ -141,7 +281,7 @@ export default function About() {
                         transition={{ delay: 0.1 }}
                         className="text-lg md:text-xl text-white/90 leading-relaxed font-medium"
                     >
-                        Découvrez l'histoire, les valeurs et l'équipe qui font de MAC le leader de la construction moderne en Afrique.
+                        {hero.description}
                     </motion.p>
                 </div>
             </section>
@@ -182,7 +322,7 @@ export default function About() {
                         viewport={{ once: true }}
                     >
                         <img
-                            src="https://images.unsplash.com/photo-1581094794329-c8112a89af12?q=80&w=1200"
+                            src={story.image}
                             alt="MAC Team Working"
                             className="rounded-[3rem] shadow-2xl"
                         />
@@ -193,9 +333,9 @@ export default function About() {
                         viewport={{ once: true }}
                         className="space-y-6 text-[#616161] leading-relaxed"
                     >
-                        <p>Fonder en 2009 par une équipe d'ingénieurs et d'architectes passionnés, MAC est né d'une conviction claire : l'Afrique mérite une approche moderne et durable de la construction.</p>
-                        <p>Notre parcours a été jalonné de défis relevés et d'innovations introduites. Chaque projet nous a permis d'affiner notre expertise et de développer des solutions adaptées aux spécificités du continent africain.</p>
-                        <p>Aujourd'hui, MAC est bien plus qu'une entreprise de construction ; nous sommes un acteur incontournable de la construction moderne en Afrique, tout en gardant nos valeurs fondamentales d'excellence et d'intégrité.</p>
+                        {story.paragraphs.map((p, idx) => (
+                            <p key={idx}>{p}</p>
+                        ))}
                     </motion.div>
                 </div>
             </section>
@@ -204,34 +344,45 @@ export default function About() {
             <section className="py-24 bg-[#F8FAFC]">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-20">
-                        <h2 className="text-3xl font-black text-[#212121] mb-4">Notre Mission et Nos Valeurs</h2>
-                        <p className="text-[#616161] text-lg">Les principes qui guident chacune de nos actions et définissent notre approche de la construction.</p>
+                        <h2 className="text-3xl font-black text-[#212121] mb-4">
+                            {valuesIntro.title}
+                        </h2>
+                        <p className="text-[#616161] text-lg">
+                            {valuesIntro.subtitle}
+                        </p>
                     </div>
 
                     <div className="bg-white rounded-[3rem] p-12 shadow-sm border border-[#F1F5F9] mb-20 text-center max-w-4xl mx-auto">
                         <h3 className="text-xl font-black text-[#212121] mb-6">Notre Mission</h3>
                         <p className="text-2xl font-black text-[#212121] leading-relaxed italic">
-                            "Transformer l'Afrique par des constructions d'excellence qui allient innovation architecturale, durabilité environnementale et développement humain tout en créant des espaces qui inspirent et perdurent."
+                            “{mission}”
                         </p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {values.map((value, idx) => (
-                            <motion.div
-                                key={idx}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: idx * 0.1 }}
-                                className="bg-white p-10 rounded-[2.5rem] border border-[#F1F5F9] shadow-sm hover:shadow-xl hover:-translate-y-1 smooth-animation group"
-                            >
-                                <div className="w-14 h-14 rounded-2xl bg-[#E0F7FA] text-[#00B8D4] flex items-center justify-center mb-6 group-hover:bg-[#00B8D4] group-hover:text-white smooth-animation">
-                                    {value.icon}
-                                </div>
-                                <h4 className="text-lg font-black text-[#212121] mb-3">{value.title}</h4>
-                                <p className="text-[#616161] text-sm leading-relaxed">{value.description}</p>
-                            </motion.div>
-                        ))}
+                        {values.map((value, idx) => {
+                            const Icon = valueIconMap[value.icon];
+                            return (
+                                <motion.div
+                                    key={idx}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ delay: idx * 0.1 }}
+                                    className="bg-white p-10 rounded-[2.5rem] border border-[#F1F5F9] shadow-sm hover:shadow-xl hover:-translate-y-1 smooth-animation group"
+                                >
+                                    <div className="w-14 h-14 rounded-2xl bg-[#E0F7FA] text-[#00B8D4] flex items-center justify-center mb-6 group-hover:bg-[#00B8D4] group-hover:text-white smooth-animation">
+                                        <Icon className="w-6 h-6" />
+                                    </div>
+                                    <h4 className="text-lg font-black text-[#212121] mb-3">
+                                        {value.title}
+                                    </h4>
+                                    <p className="text-[#616161] text-sm leading-relaxed">
+                                        {value.description}
+                                    </p>
+                                </motion.div>
+                            );
+                        })}
                     </div>
                 </div>
             </section>
@@ -270,54 +421,6 @@ export default function About() {
 
                 <div className="bg-[#00B8D4] rounded-[2.5rem] p-8 text-center text-white">
                     <p className="text-lg font-black">Notre équipe compte <span className="text-2xl">150+ professionnels</span> répartis dans nos différents départements : ingénierie, architecture, gestion de projets, qualité et développement durable.</p>
-                </div>
-            </section>
-
-            {/* Certifications & Accreditations */}
-            <section className="py-24 bg-[#F8FAFC]">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-20">
-                        <h2 className="text-3xl font-black text-[#212121] mb-4">Certifications et Agréments</h2>
-                        <p className="text-[#616161] text-lg">Nos certifications témoignent de notre engagement envers la qualité et les normes internationales.</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-20">
-                        {[
-                            { title: "ISO 9001:2015", desc: "Système de management de la qualité pour l'excellence de nos processus." },
-                            { title: "ISO 14001:2015", desc: "Management environnemental pour une construction durable et responsable." },
-                            { title: "OHSAS 18001", desc: "Gestion de la santé et sécurité au travail sur tous nos chantiers." },
-                        ].map((cert, idx) => (
-                            <div key={idx} className="flex flex-col items-center text-center">
-                                <div className="w-16 h-16 rounded-2xl bg-[#00B8D4] text-white flex items-center justify-center mb-6">
-                                    <ShieldCheck className="w-8 h-8" />
-                                </div>
-                                <h4 className="text-lg font-black text-[#212121] mb-2">{cert.title}</h4>
-                                <p className="text-[#616161] text-sm leading-relaxed">{cert.desc}</p>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="max-w-3xl mx-auto text-center">
-                        <h4 className="text-sm font-black uppercase tracking-widest text-[#212121] mb-8">Affiliations Professionnelles :</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
-                            <div className="flex items-center space-x-3 text-[#616161] text-sm font-bold">
-                                <CheckCircle2 className="w-5 h-5 text-[#00B8D4]" />
-                                <span>Ordre des Architectes et Urbanistes d'Afrique de l'Ouest</span>
-                            </div>
-                            <div className="flex items-center space-x-3 text-[#616161] text-sm font-bold">
-                                <CheckCircle2 className="w-5 h-5 text-[#00B8D4]" />
-                                <span>Fédération Africaine des Entrepreneurs du BTP</span>
-                            </div>
-                            <div className="flex items-center space-x-3 text-[#616161] text-sm font-bold">
-                                <CheckCircle2 className="w-5 h-5 text-[#00B8D4]" />
-                                <span>Green Building Council d'Afrique</span>
-                            </div>
-                            <div className="flex items-center space-x-3 text-[#616161] text-sm font-bold">
-                                <CheckCircle2 className="w-5 h-5 text-[#00B8D4]" />
-                                <span>Ordre des Ingénieurs du Sénégal</span>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </section>
 

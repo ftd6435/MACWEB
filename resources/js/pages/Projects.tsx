@@ -1,138 +1,148 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, MapPin, Calendar, ArrowRight, ChevronDown, Filter } from "lucide-react";
+import { Search, MapPin, Calendar, ArrowRight, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import axios from "axios";
+
+type CategoryItem = {
+    id: number;
+    name: string;
+    slug: string;
+    projects_count?: number;
+};
+
+type ProjectItem = {
+    id: number;
+    slug: string;
+    title: string;
+    description: string;
+    image: string | null;
+    location: string | null;
+    year: string | null;
+    category?: { id: number; name: string } | null;
+};
 
 export default function Projects() {
+    const [heroTitle, setHeroTitle] = useState("Nos Réalisations");
+    const [heroDescription, setHeroDescription] = useState(
+        "Découvrez notre portfolio d'excellence architecturale et d'innovation technique à travers l'Afrique.",
+    );
+    const [heroImage, setHeroImage] = useState<string | null>(
+        "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2000&auto=format&fit=crop",
+    );
+    const [overlayOpacity, setOverlayOpacity] = useState(60);
+    const [cmsCategories, setCmsCategories] = useState<CategoryItem[]>([]);
+
+    const [projects, setProjects] = useState<ProjectItem[]>([]);
+    const [isLoadingProjects, setIsLoadingProjects] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [pagination, setPagination] = useState<{
+        currentPage: number;
+        lastPage: number;
+        total: number;
+    }>({ currentPage: 1, lastPage: 1, total: 0 });
+
+    useEffect(() => {
+        const load = async () => {
+            try {
+                const res = await axios.get("/api/cms/projects");
+                const hero = Array.isArray(res.data?.hero_slides)
+                    ? res.data.hero_slides[0]
+                    : null;
+                if (hero?.title) setHeroTitle(String(hero.title));
+                if (hero?.description)
+                    setHeroDescription(String(hero.description));
+                if (hero?.image) setHeroImage(String(hero.image));
+                if (Array.isArray(res.data?.categories)) {
+                    setCmsCategories(res.data.categories as CategoryItem[]);
+                }
+                if (
+                    typeof hero?.overlay_opacity === "number" &&
+                    Number.isFinite(hero.overlay_opacity)
+                ) {
+                    setOverlayOpacity(
+                        Math.max(0, Math.min(100, hero.overlay_opacity)),
+                    );
+                }
+            } catch {
+                return;
+            }
+        };
+        load();
+    }, []);
+
     const [searchTerm, setSearchTerm] = useState("");
-    const [activeCategory, setActiveCategory] = useState("Tous");
+    const [activeCategoryId, setActiveCategoryId] = useState<number | null>(
+        null,
+    );
     const [activeRegion, setActiveRegion] = useState("Toutes les régions");
     const [activeYear, setActiveYear] = useState("Toutes les années");
 
-    const categories = ["Tous", "Résidentiel", "Commercial", "Industriel", "Forage"];
     const regions = ["Toutes les régions", "Sénégal", "Côte d'Ivoire", "Mali", "Guinée", "Togo", "Bénin", "Burkina Faso", "Niger"];
     const years = ["Toutes les années", "2024", "2023", "2022", "2021", "2020", "2019"];
 
-    const projects = [
-        {
-            id: 1,
-            title: "Résidence Les Palmiers",
-            category: "Résidentiel",
-            location: "Dakar, Sénégal",
-            year: "2024",
-            image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=800&auto=format&fit=crop",
-            desc: "Complexe résidentiel haut de gamme de 120 appartements avec espaces verts et piscine commune."
-        },
-        {
-            id: 2,
-            title: "Centre d'Affaires Atlantique",
-            category: "Commercial",
-            location: "Abidjan, Côte d'Ivoire",
-            year: "2023",
-            image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=800&auto=format&fit=crop",
-            desc: "Tour de bureaux de 25 étages avec certification HQE-Durable et technologies smart-building."
-        },
-        {
-            id: 3,
-            title: "Usine Textile Moderne",
-            category: "Industriel",
-            location: "Lomé, Togo",
-            year: "2022",
-            image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=800&auto=format&fit=crop",
-            desc: "Complexe industriel de 15 000 m² avec équipements de pointe et normes environnementales."
-        },
-        {
-            id: 4,
-            title: "Hôtel Prestige Sahel",
-            category: "Commercial",
-            location: "Ouagadougou, Burkina Faso",
-            year: "2023",
-            image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=800&auto=format&fit=crop",
-            desc: "Hôtel 5 étoiles de 200 chambres avec spa, centre de conférence et restaurants gastronomiques."
-        },
-        {
-            id: 5,
-            title: "Centre Commercial Baobab",
-            category: "Commercial",
-            location: "Bamako, Mali",
-            year: "2024",
-            image: "https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?q=80&w=800&auto=format&fit=crop",
-            desc: "Centre commercial de 50 boutiques avec cinéma, food-court et espace de divertissement familial."
-        },
-        {
-            id: 6,
-            title: "Campus Universitaire Innovation",
-            category: "Commercial",
-            location: "Cotonou, Bénin",
-            year: "2021",
-            image: "https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=800&auto=format&fit=crop",
-            desc: "Campus de 10 hectares accueillant 5 000 étudiants avec laboratoires et bibliothèque numérique."
-        },
-        {
-            id: 7,
-            title: "Projet Forage Communautaire",
-            category: "Forage",
-            location: "Région de Kayes, Mali",
-            year: "2023",
-            image: "https://images.unsplash.com/photo-1533241242276-888998064956?q=80&w=800&auto=format&fit=crop",
-            desc: "Installation de 25 puits d'eau potable desservant 15 villages ruraux avec système solaire."
-        },
-        {
-            id: 8,
-            title: "Villa Moderne Plateau",
-            category: "Résidentiel",
-            location: "Plateau, Abidjan",
-            year: "2022",
-            image: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?q=80&w=800&auto=format&fit=crop",
-            desc: "Villa familiale de 450 m² avec piscine, jardin paysager et domotique intégrée."
-        },
-        {
-            id: 9,
-            title: "Centre Médical Excellence",
-            category: "Commercial",
-            location: "Niamey, Niger",
-            year: "2021",
-            image: "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?q=80&w=800&auto=format&fit=crop",
-            desc: "Centre hospitalier de 100 lits avec bloc opératoire moderne et unité de soins intensifs."
-        },
-        {
-            id: 10,
-            title: "Usine Agroalimentaire Sahel",
-            category: "Industriel",
-            location: "Bobo-Dioulasso, Burkina Faso",
-            year: "2020",
-            image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=800&auto=format&fit=crop",
-            desc: "Complexe de transformation de 8 000 m² pour céréales locales avec technologies éco-responsables."
-        },
-        {
-            id: 11,
-            title: "Cité des Jardins",
-            category: "Résidentiel",
-            location: "Conakry, Guinée",
-            year: "2020",
-            image: "https://images.unsplash.com/photo-1590608897129-79da98d15969?q=80&w=800&auto=format&fit=crop",
-            desc: "Programme de logements sociaux de 300 appartements avec équipements communautaires."
-        },
-        {
-            id: 12,
-            title: "Réseau Hydraulique Rural",
-            category: "Forage",
-            location: "Région de Ségou, Mali",
-            year: "2019",
-            image: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=800&auto=format&fit=crop",
-            desc: "Réseau de 18 forages équipés de pompes solaires desservant 12 000 habitants."
-        }
-    ];
+    const categoryButtons = useMemo(
+        () => [{ id: null as number | null, name: "Tous", slug: "all" }, ...cmsCategories],
+        [cmsCategories],
+    );
 
-    const filteredProjects = projects.filter(p => {
-        const matchesSearch = p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                             p.desc.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCategory = activeCategory === "Tous" || p.category === activeCategory;
-        const matchesRegion = activeRegion === "Toutes les régions" || p.location.includes(activeRegion);
-        const matchesYear = activeYear === "Toutes les années" || p.year === activeYear;
+    const badgeClassForCategory = (name: string) => {
+        const normalized = name.toLowerCase();
+        if (normalized.includes("résident")) return "bg-emerald-500";
+        if (normalized.includes("commercial")) return "bg-blue-600";
+        if (normalized.includes("industri")) return "bg-amber-600";
+        if (normalized.includes("forage")) return "bg-cyan-500";
+        return "bg-[#00B8D4]";
+    };
 
-        return matchesSearch && matchesCategory && matchesRegion && matchesYear;
-    });
+    const fetchProjectsPage = useCallback(
+        async (page: number, append: boolean) => {
+            if (append) {
+                setIsLoadingMore(true);
+            } else {
+                setIsLoadingProjects(true);
+            }
+
+            try {
+                const params: Record<string, any> = { page };
+                if (searchTerm.trim()) params.search = searchTerm.trim();
+                if (activeCategoryId) params.category_id = activeCategoryId;
+                if (activeYear !== "Toutes les années") params.year = activeYear;
+                if (activeRegion !== "Toutes les régions") params.location = activeRegion;
+
+                const res = await axios.get("/api/projects", { params });
+                const nextProjects = (res.data?.data || []) as ProjectItem[];
+
+                setProjects((prev) =>
+                    append ? [...prev, ...nextProjects] : nextProjects,
+                );
+                setPagination({
+                    currentPage: Number(res.data?.current_page || page),
+                    lastPage: Number(res.data?.last_page || page),
+                    total: Number(res.data?.total || nextProjects.length),
+                });
+            } catch {
+                if (!append) {
+                    setProjects([]);
+                    setPagination({ currentPage: 1, lastPage: 1, total: 0 });
+                }
+            } finally {
+                if (append) {
+                    setIsLoadingMore(false);
+                } else {
+                    setIsLoadingProjects(false);
+                }
+            }
+        },
+        [activeCategoryId, activeRegion, activeYear, searchTerm],
+    );
+
+    useEffect(() => {
+        const t = window.setTimeout(() => {
+            fetchProjectsPage(1, false);
+        }, 250);
+        return () => window.clearTimeout(t);
+    }, [activeCategoryId, activeRegion, activeYear, fetchProjectsPage, searchTerm]);
 
     return (
         <div className="bg-white min-h-screen">
@@ -140,12 +150,15 @@ export default function Projects() {
             <section className="relative h-[50vh] flex items-center justify-center pt-20">
                 <div className="absolute inset-0 z-0">
                     <img
-                        src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2000&auto=format&fit=crop"
+                        src={heroImage || ""}
                         alt="Projects Hero"
                         className="w-full h-full object-cover"
                     />
                     {/* Overlay with Sky Blue Linear Gradient and Blur */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-[#00B8D4]/60 via-[#00B8D4]/30 to-[#212121]/90 backdrop-blur-[2px]"></div>
+                    <div
+                        className="absolute inset-0 bg-gradient-to-b from-[#00B8D4]/60 via-[#00B8D4]/30 to-[#212121]/90 backdrop-blur-[2px]"
+                        style={{ opacity: overlayOpacity / 100 }}
+                    />
                 </div>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
                     <motion.h1
@@ -153,10 +166,10 @@ export default function Projects() {
                         animate={{ opacity: 1, y: 0 }}
                         className="text-5xl md:text-6xl font-black text-white mb-6"
                     >
-                        Nos Réalisations
+                        {heroTitle}
                     </motion.h1>
                     <p className="text-xl text-white/80 max-w-3xl mx-auto leading-relaxed">
-                        Découvrez notre portfolio d'excellence architecturale et d'innovation technique à travers l'Afrique.
+                        {heroDescription}
                     </p>
                 </div>
             </section>
@@ -184,19 +197,25 @@ export default function Projects() {
                             <div className="flex flex-col space-y-3">
                                 <span className="text-[10px] font-black uppercase tracking-widest text-[#757575]">Type de Projet</span>
                                 <div className="flex flex-wrap gap-2">
-                                    {categories.map((cat) => (
+                                    {categoryButtons.map((cat) => {
+                                        const isActive =
+                                            cat.id === null
+                                                ? activeCategoryId === null
+                                                : activeCategoryId === cat.id;
+                                        return (
                                         <button
-                                            key={cat}
-                                            onClick={() => setActiveCategory(cat)}
+                                            key={cat.slug}
+                                            onClick={() => setActiveCategoryId(cat.id)}
                                             className={`px-6 py-2 rounded-lg text-xs font-bold smooth-animation ${
-                                                activeCategory === cat
+                                                isActive
                                                     ? "bg-[#00B8D4] text-white shadow-lg shadow-[#00B8D4]/20"
                                                     : "bg-[#F8FAFC] text-[#616161] hover:bg-[#E0F7FA] hover:text-[#00B8D4]"
                                             }`}
                                         >
-                                            {cat}
+                                            {cat.name}
                                         </button>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
 
@@ -239,7 +258,7 @@ export default function Projects() {
             {/* Results Info */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <p className="text-xs font-bold text-[#757575] uppercase tracking-widest">
-                    {filteredProjects.length} projets trouvés
+                    {isLoadingProjects ? "Chargement..." : `${pagination.total} projets trouvés`}
                 </p>
             </div>
 
@@ -250,7 +269,7 @@ export default function Projects() {
                     className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
                 >
                     <AnimatePresence mode="popLayout">
-                        {filteredProjects.map((project) => (
+                        {projects.map((project) => (
                             <motion.div
                                 layout
                                 key={project.id}
@@ -262,17 +281,20 @@ export default function Projects() {
                             >
                                 <div className="aspect-[16/10] overflow-hidden relative">
                                     <img
-                                        src={project.image}
+                                        src={
+                                            project.image ||
+                                            "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=1200&auto=format&fit=crop"
+                                        }
                                         alt={project.title}
                                         className="w-full h-full object-cover group-hover:scale-110 smooth-animation"
                                     />
                                     <div className="absolute top-4 left-4">
-                                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-white ${
-                                            project.category === "Résidentiel" ? "bg-emerald-500" :
-                                            project.category === "Commercial" ? "bg-blue-600" :
-                                            project.category === "Industriel" ? "bg-amber-600" : "bg-cyan-500"
-                                        }`}>
-                                            {project.category}
+                                        <span
+                                            className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-white ${badgeClassForCategory(
+                                                project.category?.name || "Projet",
+                                            )}`}
+                                        >
+                                            {project.category?.name || "Projet"}
                                         </span>
                                     </div>
                                 </div>
@@ -283,20 +305,20 @@ export default function Projects() {
                                     <div className="flex items-center space-x-4 mb-6 text-[10px] font-bold text-[#757575] uppercase tracking-widest">
                                         <div className="flex items-center">
                                             <MapPin className="w-3.5 h-3.5 mr-1.5 text-[#00B8D4]" />
-                                            {project.location}
+                                            {project.location || "—"}
                                         </div>
                                         <div className="flex items-center">
                                             <Calendar className="w-3.5 h-3.5 mr-1.5 text-[#00B8D4]" />
-                                            {project.year}
+                                            {project.year || "—"}
                                         </div>
                                     </div>
 
                                     <p className="text-sm text-[#616161] leading-relaxed mb-8 flex-1">
-                                        {project.desc}
+                                        {project.description}
                                     </p>
 
                                     <Link
-                                        to={`/projects/${project.id}`}
+                                        to={`/projects/${project.slug}`}
                                         className="inline-flex items-center text-xs font-black text-[#00B8D4] uppercase tracking-widest group/link"
                                     >
                                         Voir les détails
@@ -309,13 +331,26 @@ export default function Projects() {
                 </motion.div>
 
                 {/* Pagination */}
-                {filteredProjects.length > 0 && (
+                {projects.length > 0 && (
                     <div className="mt-20 text-center space-y-6">
-                        <button className="px-10 py-4 bg-[#00B8D4] text-white font-black rounded-xl shadow-xl shadow-[#00B8D4]/20 hover:bg-[#0097A7] hover:-translate-y-1 smooth-animation uppercase tracking-widest text-xs">
-                            Charger plus de projets
-                        </button>
+                        {pagination.currentPage < pagination.lastPage && (
+                            <button
+                                onClick={() =>
+                                    fetchProjectsPage(
+                                        pagination.currentPage + 1,
+                                        true,
+                                    )
+                                }
+                                disabled={isLoadingMore}
+                                className="px-10 py-4 bg-[#00B8D4] text-white font-black rounded-xl shadow-xl shadow-[#00B8D4]/20 hover:bg-[#0097A7] hover:-translate-y-1 smooth-animation uppercase tracking-widest text-xs disabled:opacity-50"
+                            >
+                                {isLoadingMore
+                                    ? "Chargement..."
+                                    : "Charger plus de projets"}
+                            </button>
+                        )}
                         <p className="text-[10px] font-bold text-[#9E9E9E] uppercase tracking-widest">
-                            Affichage de {filteredProjects.length} sur 128 projets au total
+                            Affichage de {projects.length} sur {pagination.total} projets au total
                         </p>
                     </div>
                 )}

@@ -13,8 +13,67 @@ import {
     ChevronRight,
     Navigation
 } from "lucide-react";
+import axios from "axios";
 
 export default function Contact() {
+    const [heroTitle, setHeroTitle] = useState("Contactez-nous");
+    const [heroDescription, setHeroDescription] = useState(
+        "Nous sommes là pour vous accompagner dans tous vos projets de construction.\nNotre équipe vous répondra sous 24 heures.",
+    );
+    const [heroImage, setHeroImage] = useState<string | null>(
+        "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2000&auto=format&fit=crop",
+    );
+    const [overlayOpacity, setOverlayOpacity] = useState(60);
+    type Office = {
+        id: number;
+        name: string;
+        city: string;
+        country: string;
+        address: string;
+        phone: string | null;
+        email: string | null;
+        image: string | null;
+        is_headquarters: boolean;
+        map_lat: string | number | null;
+        map_lng: string | number | null;
+        is_active: boolean;
+        order: number;
+    };
+    const [offices, setOffices] = useState<Office[]>([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
+
+    React.useEffect(() => {
+        const load = async () => {
+            try {
+                const res = await axios.get("/api/cms/contact");
+                const hero = Array.isArray(res.data?.hero_slides)
+                    ? res.data.hero_slides[0]
+                    : null;
+                if (hero?.title) setHeroTitle(String(hero.title));
+                if (hero?.description)
+                    setHeroDescription(String(hero.description));
+                if (hero?.image) setHeroImage(String(hero.image));
+                if (
+                    typeof hero?.overlay_opacity === "number" &&
+                    Number.isFinite(hero.overlay_opacity)
+                ) {
+                    setOverlayOpacity(
+                        Math.max(0, Math.min(100, hero.overlay_opacity)),
+                    );
+                }
+
+                const apiOffices = Array.isArray(res.data?.offices)
+                    ? (res.data.offices as Office[])
+                    : [];
+                setOffices(apiOffices);
+            } catch {
+                return;
+            }
+        };
+        load();
+    }, []);
+
     const [formData, setFormData] = useState({
         name: "",
         email: "",
@@ -26,63 +85,71 @@ export default function Contact() {
     });
     const [submitted, setSubmitted] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setSubmitted(true);
-        setTimeout(() => setSubmitted(false), 5000);
-        setFormData({
-            name: "",
-            email: "",
-            phone: "",
-            projectType: "",
-            location: "",
-            message: "",
-            privacy: false
-        });
-    };
+        setSubmitError(null);
+        setIsSubmitting(true);
+        try {
+            const payload = {
+                name: formData.name,
+                email: formData.email,
+                phone: formData.phone || null,
+                project_type: formData.projectType || null,
+                project_location: formData.location || null,
+                message: formData.message,
+            };
+            await axios.post("/api/contact", payload);
 
-    const offices = [
-        {
-            city: "Dakar, Sénégal",
-            role: "Siège Social",
-            address: "Avenue Cheikh Anta Diop, Dakar",
-            phone: "+224 622 14 67 14",
-            email: "dakar@mac-construction.com",
-            image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=800"
-        },
-        {
-            city: "Abidjan, Côte d'Ivoire",
-            role: "Bureau Régional",
-            address: "Boulevard Latrille, Cocody, Abidjan",
-            phone: "+225 27 22 XX XX XX",
-            email: "abidjan@mac-construction.com",
-            image: "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=800"
-        },
-        {
-            city: "Bamako, Mali",
-            role: "Bureau Local",
-            address: "ACI 2000, Bamako",
-            phone: "+223 XX XX XX XX",
-            email: "bamako@mac-construction.com",
-            image: "https://images.unsplash.com/photo-1497366811353-6870744d04b2?q=80&w=800"
+            setSubmitted(true);
+            setTimeout(() => setSubmitted(false), 5000);
+            setFormData({
+                name: "",
+                email: "",
+                phone: "",
+                projectType: "",
+                location: "",
+                message: "",
+                privacy: false,
+            });
+        } catch (err: any) {
+            const msg =
+                err.response?.data?.message ||
+                err.response?.data?.errors?.name?.[0] ||
+                err.response?.data?.errors?.email?.[0] ||
+                err.response?.data?.errors?.message?.[0] ||
+                "Impossible d'envoyer votre message. Veuillez réessayer.";
+            setSubmitError(msg);
+        } finally {
+            setIsSubmitting(false);
         }
-    ];
+    };
 
     return (
         <div className="bg-white min-h-screen">
-            {/* Header Section */}
-            <section className="bg-[#F8FAFC] py-24 border-b border-[#E2E8F0]">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            {/* Hero Section */}
+            <section className="relative py-24 border-b border-[#E2E8F0] overflow-hidden">
+                <div className="absolute inset-0 z-0">
+                    <img
+                        src={heroImage || ""}
+                        alt="Contact Hero"
+                        className="w-full h-full object-cover"
+                    />
+                    <div
+                        className="absolute inset-0 bg-gradient-to-b from-[#00B8D4]/60 via-[#00B8D4]/30 to-[#212121]/90 backdrop-blur-[2px]"
+                        style={{ opacity: overlayOpacity / 100 }}
+                    />
+                </div>
+
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
                     <motion.h1
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-4xl md:text-6xl font-black text-[#212121] mb-6"
+                        className="text-4xl md:text-6xl font-black text-white mb-6"
                     >
-                        Contactez-nous
+                        {heroTitle}
                     </motion.h1>
-                    <p className="text-[#616161] max-w-2xl mx-auto text-lg md:text-xl font-medium">
-                        Nous sommes là pour vous accompagner dans tous vos projets de construction.
-                        Notre équipe vous répondra sous 24 heures.
+                    <p className="text-white/85 max-w-2xl mx-auto text-lg md:text-xl font-medium whitespace-pre-line">
+                        {heroDescription}
                     </p>
                 </div>
             </section>
@@ -260,9 +327,20 @@ export default function Contact() {
 
                                 <button
                                     type="submit"
+                                    disabled={isSubmitting}
                                     className="w-full py-5 bg-[#00B8D4] text-white font-black rounded-[1.5rem] shadow-lg shadow-[#00B8D4]/20 hover:bg-[#0097A7] hover:-translate-y-1 smooth-animation uppercase tracking-widest text-xs flex items-center justify-center gap-3"
                                 >
-                                    Envoyer le message <Send className="w-4 h-4" />
+                                    {isSubmitting ? (
+                                        <>
+                                            Envoi en cours{" "}
+                                            <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        </>
+                                    ) : (
+                                        <>
+                                            Envoyer le message{" "}
+                                            <Send className="w-4 h-4" />
+                                        </>
+                                    )}
                                 </button>
 
                                 {submitted && (
@@ -272,6 +350,15 @@ export default function Contact() {
                                         className="text-center text-sm font-bold text-[#00C853]"
                                     >
                                         Merci ! Votre message a été envoyé avec succès.
+                                    </motion.p>
+                                )}
+                                {submitError && (
+                                    <motion.p
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="text-center text-sm font-bold text-red-500"
+                                    >
+                                        {submitError}
                                     </motion.p>
                                 )}
                             </form>
@@ -288,10 +375,19 @@ export default function Contact() {
                         <p className="text-[#616161] text-lg font-medium">Présents dans plusieurs pays d'Afrique pour mieux vous servir.</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                    <div
+                        className={[
+                            "grid gap-10",
+                            offices.length === 1
+                                ? "grid-cols-1 max-w-2xl mx-auto"
+                                : offices.length === 2
+                                    ? "grid-cols-1 md:grid-cols-2 max-w-5xl mx-auto"
+                                    : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3",
+                        ].join(" ")}
+                    >
                         {offices.map((office, idx) => (
                             <motion.div
-                                key={idx}
+                                key={office.id ?? idx}
                                 initial={{ opacity: 0, y: 20 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
@@ -299,27 +395,44 @@ export default function Contact() {
                                 className="bg-white rounded-[2.5rem] overflow-hidden border border-[#F1F5F9] shadow-sm hover:shadow-xl smooth-animation group"
                             >
                                 <div className="aspect-video overflow-hidden">
-                                    <img
-                                        src={office.image}
-                                        alt={office.city}
-                                        className="w-full h-full object-cover group-hover:scale-110 smooth-animation"
-                                    />
+                                    {office.image ? (
+                                        <img
+                                            src={office.image}
+                                            alt={office.city}
+                                            className="w-full h-full object-cover group-hover:scale-110 smooth-animation"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full bg-[#F8FAFC]" />
+                                    )}
                                 </div>
                                 <div className="p-8 space-y-4">
                                     <div>
-                                        <h3 className="text-xl font-black text-[#212121]">{office.city}</h3>
-                                        <p className="text-[#00B8D4] text-[10px] font-black uppercase tracking-widest">{office.role}</p>
+                                        <h3 className="text-xl font-black text-[#212121]">
+                                            {office.city}
+                                            {office.country ? `, ${office.country}` : ""}
+                                        </h3>
+                                        <p className="text-[#00B8D4] text-[10px] font-black uppercase tracking-widest">
+                                            {office.is_headquarters
+                                                ? "Siège Social"
+                                                : office.name}
+                                        </p>
                                     </div>
                                     <div className="space-y-3 pt-4 border-t border-[#F1F5F9]">
                                         <p className="flex items-center text-xs font-bold text-[#616161]">
                                             <MapPin className="w-4 h-4 mr-3 text-[#9E9E9E]" /> {office.address}
                                         </p>
-                                        <p className="flex items-center text-xs font-bold text-[#616161]">
-                                            <Phone className="w-4 h-4 mr-3 text-[#9E9E9E]" /> {office.phone}
-                                        </p>
-                                        <p className="flex items-center text-xs font-bold text-[#616161]">
-                                            <Mail className="w-4 h-4 mr-3 text-[#9E9E9E]" /> {office.email}
-                                        </p>
+                                        {office.phone && (
+                                            <p className="flex items-center text-xs font-bold text-[#616161]">
+                                                <Phone className="w-4 h-4 mr-3 text-[#9E9E9E]" />{" "}
+                                                {office.phone}
+                                            </p>
+                                        )}
+                                        {office.email && (
+                                            <p className="flex items-center text-xs font-bold text-[#616161]">
+                                                <Mail className="w-4 h-4 mr-3 text-[#9E9E9E]" />{" "}
+                                                {office.email}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             </motion.div>

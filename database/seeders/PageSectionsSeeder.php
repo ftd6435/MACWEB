@@ -58,7 +58,8 @@ class PageSectionsSeeder extends Seeder
                 'page' => 'about',
                 'section_key' => 'story',
                 'title' => 'Notre Histoire',
-                'content' => 'Fondée en 2009 par une équipe d\'ingénieurs et d\'architectes passionnés, MAC est née d\'une conviction claire : l\'Afrique mérite une approche moderne et durable de la construction. Notre parcours a été jalonné de défis relevés et d\'innovations introduites. Chaque projet nous a permis d\'affiner notre expertise et de développer des solutions adaptées aux spécificités du continent africain. Aujourd\'hui, MAC est bien plus qu\'une entreprise de construction ; nous sommes un acteur incontournable de la construction moderne en Afrique, tout en gardant nos valeurs fondamentales d\'excellence et d\'intégrité.',
+                'image' => 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?q=80&w=1200',
+                'content' => 'Fondée en 2009 par une équipe d\'ingénieurs et d\'architectes passionnés, MAC est née d\'une conviction claire : l\'Afrique mérite une approche moderne et durable de la construction.'."\n\n".'Notre parcours a été jalonné de défis relevés et d\'innovations introduites. Chaque projet nous a permis d\'affiner notre expertise et de développer des solutions adaptées aux spécificités du continent africain.'."\n\n".'Aujourd\'hui, MAC est bien plus qu\'une entreprise de construction ; nous sommes un acteur incontournable de la construction moderne en Afrique, tout en gardant nos valeurs fondamentales d\'excellence et d\'intégrité.',
                 'order' => 1,
             ],
             [

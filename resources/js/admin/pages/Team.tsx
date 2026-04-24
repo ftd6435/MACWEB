@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ModalPortal from "../../components/ModalPortal";
+import ConfirmDialog from "../../components/ConfirmDialog";
 import { useToast } from "../../services/ToastContext";
 import {
     Plus,
@@ -22,6 +23,7 @@ import {
     MoreVertical,
 } from "lucide-react";
 import axios from "axios";
+import ImageUploader from "../../components/ImageUploader";
 
 interface TeamMember {
     id: number;
@@ -30,6 +32,8 @@ interface TeamMember {
     bio: string | null;
     image: string | null;
     linkedin: string | null;
+    email?: string | null;
+    twitter?: string | null;
     is_active: boolean;
     order: number;
 }
@@ -40,11 +44,15 @@ export default function AdminTeam() {
     const [searchTerm, setSearchTerm] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
+    const [pendingDelete, setPendingDelete] = useState<TeamMember | null>(null);
     const [formData, setFormData] = useState<Partial<TeamMember>>({
         name: "",
         role: "",
         bio: "",
+        image: null,
         linkedin: "",
+        email: "",
+        twitter: "",
         is_active: true,
     });
 
@@ -55,8 +63,8 @@ export default function AdminTeam() {
     const fetchTeam = async () => {
         setIsLoading(true);
         try {
-            const response = await axios.get("/api/cms/about");
-            setTeam(response.data.team || []);
+            const response = await axios.get("/api/admin/team");
+            setTeam(response.data || []);
         } catch (error) {
             console.error("Failed to fetch team", error);
         } finally {
@@ -74,7 +82,10 @@ export default function AdminTeam() {
                 name: "",
                 role: "",
                 bio: "",
+                image: null,
                 linkedin: "",
+                email: "",
+                twitter: "",
                 is_active: true,
             });
         }
@@ -85,13 +96,60 @@ export default function AdminTeam() {
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("Saving member:", formData);
-        setIsModalOpen(false);
-        toast(
-            editingMember
-                ? "Membre mis à jour avec succès"
-                : "Membre ajouté avec succès",
-        );
+        try {
+            await axios.get("/sanctum/csrf-cookie");
+
+            const payload = {
+                name: formData.name,
+                role: formData.role,
+                bio: formData.bio,
+                image: formData.image,
+                linkedin: formData.linkedin,
+                email: formData.email,
+                twitter: formData.twitter,
+                is_active: formData.is_active ?? true,
+                order: formData.order ?? 0,
+            };
+
+            if (editingMember) {
+                await axios.put(`/api/admin/team/${editingMember.id}`, payload);
+            } else {
+                await axios.post("/api/admin/team", payload);
+            }
+
+            await fetchTeam();
+            setIsModalOpen(false);
+            toast(
+                editingMember
+                    ? "Membre mis à jour avec succès"
+                    : "Membre ajouté avec succès",
+            );
+        } catch (err: any) {
+            const msg =
+                err.response?.data?.message ||
+                err.response?.data?.errors?.name?.[0] ||
+                "Échec de l'enregistrement";
+            toast(msg, "error");
+        }
+    };
+
+    const handleDelete = async (member: TeamMember) => {
+        setPendingDelete(member);
+    };
+
+    const confirmDelete = async () => {
+        if (!pendingDelete) return;
+        try {
+            await axios.get("/sanctum/csrf-cookie");
+            await axios.delete(`/api/admin/team/${pendingDelete.id}`);
+            await fetchTeam();
+            toast("Membre supprimé");
+            setPendingDelete(null);
+        } catch (err: any) {
+            const msg =
+                err.response?.data?.message || "Échec de la suppression";
+            toast(msg, "error");
+        }
     };
 
     const filteredTeam = team.filter(
@@ -192,7 +250,10 @@ export default function AdminTeam() {
                                     >
                                         <Edit2 className="w-4 h-4" />
                                     </button>
-                                    <button className="p-3 bg-[#F8FAFC] text-[#616161] hover:bg-red-50 hover:text-red-500 rounded-xl smooth-animation">
+                                    <button
+                                        onClick={() => handleDelete(member)}
+                                        className="p-3 bg-[#F8FAFC] text-[#616161] hover:bg-red-50 hover:text-red-500 rounded-xl smooth-animation"
+                                    >
                                         <Trash2 className="w-4 h-4" />
                                     </button>
                                     {member.linkedin && (
@@ -254,11 +315,17 @@ export default function AdminTeam() {
                                     className="p-10 space-y-8 overflow-y-auto custom-scrollbar"
                                 >
                                     <div className="flex flex-col items-center mb-8">
-                                        <div className="w-32 h-32 rounded-[2.5rem] bg-[#F8FAFC] border-2 border-dashed border-[#E2E8F0] flex flex-col items-center justify-center text-[#9E9E9E] hover:border-[#00B8D4] hover:bg-[#00B8D4]/5 smooth-animation cursor-pointer relative group overflow-hidden">
-                                            <Camera className="w-8 h-8 mb-2 group-hover:scale-110 smooth-animation" />
-                                            <span className="text-[8px] font-black uppercase tracking-widest">
-                                                Photo
-                                            </span>
+                                        <div className="w-64">
+                                            <ImageUploader
+                                                value={formData.image ?? null}
+                                                onChange={(url) =>
+                                                    setFormData({
+                                                        ...formData,
+                                                        image: url,
+                                                    })
+                                                }
+                                                label="Photo"
+                                            />
                                         </div>
                                     </div>
 
@@ -387,6 +454,20 @@ export default function AdminTeam() {
                     )}
                 </AnimatePresence>
             </ModalPortal>
+
+            <ConfirmDialog
+                open={!!pendingDelete}
+                title="Supprimer le membre ?"
+                message={
+                    pendingDelete
+                        ? `Cette action supprimera "${pendingDelete.name}".`
+                        : ""
+                }
+                confirmText="Supprimer"
+                cancelText="Annuler"
+                onCancel={() => setPendingDelete(null)}
+                onConfirm={confirmDelete}
+            />
         </div>
     );
 }

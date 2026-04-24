@@ -4,12 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class ProjectsController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Project::published()->with('category');
+        $query = Project::query()->with(['category', 'service']);
+
+        if (!Auth::check()) {
+            $query->published();
+        }
 
         if ($request->has('category_id')) {
             $query->where('category_id', $request->category_id);
@@ -19,8 +25,8 @@ class ProjectsController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%")
-                  ->orWhere('location', 'like', "%{$search}%");
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('location', 'like', "%{$search}%");
             });
         }
 
@@ -39,12 +45,15 @@ class ProjectsController extends Controller
 
     public function show($slug)
     {
-        $project = Project::with('category', 'comments')
-            ->where('slug', $slug)
-            ->where('is_published', true)
-            ->firstOrFail();
+        $query = Project::with(['category', 'service', 'comments'])->where('slug', $slug);
+        if (!Auth::check()) {
+            $query->where('is_published', true);
+        }
+        $project = $query->firstOrFail();
 
-        $project->increment('views');
+        if (!Auth::check()) {
+            $project->increment('views');
+        }
 
         $related = Project::published()
             ->where('id', '!=', $project->id)
@@ -62,12 +71,13 @@ class ProjectsController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'slug' => 'required|string|unique:projects',
+            'slug' => 'nullable|string',
             'image' => 'nullable|string',
             'description' => 'required|string',
             'details' => 'nullable|string',
             'location' => 'required|string',
             'category_id' => 'nullable|exists:categories,id',
+            'service_id' => 'required|exists:services,id',
             'year' => 'nullable|string',
             'client_name' => 'nullable|string',
             'metrics' => 'nullable|array',
@@ -78,21 +88,25 @@ class ProjectsController extends Controller
             'is_published' => 'boolean',
         ]);
 
+        $baseSlug = $validated['slug'] ?? Str::slug($validated['title']);
+        $validated['slug'] = $this->makeUniqueSlug($baseSlug);
+
         $project = Project::create($validated);
 
-        return response()->json($project->load('category'), 201);
+        return response()->json($project->load(['category', 'service']), 201);
     }
 
     public function update(Request $request, Project $project)
     {
         $validated = $request->validate([
             'title' => 'string|max:255',
-            'slug' => 'string|unique:projects,slug,'.$project->id,
+            'slug' => 'nullable|string',
             'image' => 'nullable|string',
             'description' => 'string',
             'details' => 'nullable|string',
             'location' => 'string',
             'category_id' => 'nullable|exists:categories,id',
+            'service_id' => 'sometimes|required|exists:services,id',
             'year' => 'nullable|string',
             'client_name' => 'nullable|string',
             'metrics' => 'nullable|array',
@@ -103,9 +117,14 @@ class ProjectsController extends Controller
             'is_published' => 'boolean',
         ]);
 
+        if (array_key_exists('title', $validated) || array_key_exists('slug', $validated)) {
+            $baseSlug = $validated['slug'] ?? Str::slug($validated['title'] ?? $project->title);
+            $validated['slug'] = $this->makeUniqueSlug($baseSlug, $project->id);
+        }
+
         $project->update($validated);
 
-        return response()->json($project->load('category'));
+        return response()->json($project->load(['category', 'service']));
     }
 
     public function destroy(Project $project)
@@ -113,5 +132,23 @@ class ProjectsController extends Controller
         $project->delete();
 
         return response()->json(null, 204);
+    }
+
+    private function makeUniqueSlug(string $baseSlug, ?int $ignoreId = null): string
+    {
+        $slug = $baseSlug !== '' ? $baseSlug : Str::random(8);
+        $counter = 2;
+
+        while (
+            Project::query()
+            ->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId))
+            ->where('slug', $slug)
+            ->exists()
+        ) {
+            $slug = $baseSlug . '-' . $counter;
+            $counter++;
+        }
+
+        return $slug;
     }
 }

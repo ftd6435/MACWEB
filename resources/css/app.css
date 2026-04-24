@@ -84,6 +84,21 @@
         font-style: italic;
     }
 
+    .marquee-track {
+        display: flex;
+        width: max-content;
+        animation: marquee 28s linear infinite;
+    }
+
+    @keyframes marquee {
+        0% {
+            transform: translateX(0);
+        }
+        100% {
+            transform: translateX(-50%);
+        }
+    }
+
     /* Quill Editor Admin Styling */
     .quill-admin-wrapper .ql-toolbar {
         border: none;

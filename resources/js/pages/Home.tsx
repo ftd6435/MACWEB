@@ -25,6 +25,7 @@ import {
     Instagram
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import axios from "axios";
 
 const TestimonialsSlider = () => {
     const testimonials = [
@@ -203,28 +204,101 @@ export default function Home() {
         },
     ];
 
-    const features = [
+    const featureIconMap = {
+        Award,
+        Clock,
+        Shield,
+        Users,
+    };
+
+    type FeatureItem = {
+        title: string;
+        desc: string;
+        icon: keyof typeof featureIconMap;
+    };
+
+    const defaultFeatures: FeatureItem[] = [
         {
-            icon: <Award className="w-8 h-8" />,
+            icon: "Award",
             title: "Expertise Reconnue",
             desc: "Plus de 15 ans d'expérience dans la construction en Afrique.",
         },
         {
-            icon: <Clock className="w-8 h-8" />,
+            icon: "Clock",
             title: "Délais Respectés",
             desc: "98% de nos projets livrés dans les temps convenus.",
         },
         {
-            icon: <Shield className="w-8 h-8" />,
+            icon: "Shield",
             title: "Qualité Garantie",
             desc: "Matériaux premium et normes de construction internationales.",
         },
         {
-            icon: <Users className="w-8 h-8" />,
+            icon: "Users",
             title: "Accompagnement Personnalisé",
             desc: "Équipe dédiée pour chaque projet du début à la fin.",
         },
     ];
+
+    const [features, setFeatures] =
+        React.useState<FeatureItem[]>(defaultFeatures);
+    type HeroSlide = {
+        id: number;
+        title: string | null;
+        subtitle: string | null;
+        description: string | null;
+        cta_text: string | null;
+        cta_link: string | null;
+        cta_secondary_text: string | null;
+        cta_secondary_link: string | null;
+        image: string | null;
+        overlay_opacity: number | null;
+        order: number;
+    };
+    const [heroSlides, setHeroSlides] = React.useState<HeroSlide[]>([]);
+
+    React.useEffect(() => {
+        const load = async () => {
+            try {
+                const res = await axios.get("/api/cms/home");
+                const slides = Array.isArray(res.data?.hero_slides)
+                    ? (res.data.hero_slides as HeroSlide[])
+                    : [];
+                if (slides.length > 0) setHeroSlides(slides);
+
+                const list = Array.isArray(res.data?.home_features)
+                    ? res.data.home_features
+                    : null;
+                if (!list) return;
+
+                const mapped: FeatureItem[] = list
+                    .slice()
+                    .sort(
+                        (a: any, b: any) =>
+                            (a?.order ?? 0) - (b?.order ?? 0),
+                    )
+                    .map((item: any) => {
+                        const iconName = String(item?.icon || "Award");
+                        const safeIcon =
+                            iconName in featureIconMap
+                                ? (iconName as FeatureItem["icon"])
+                                : "Award";
+
+                        return {
+                            title: String(item?.label || ""),
+                            desc: String(item?.value || ""),
+                            icon: safeIcon,
+                        };
+                    })
+                    .filter((f: FeatureItem) => f.title.trim().length > 0);
+
+                if (mapped.length > 0) setFeatures(mapped);
+            } catch {
+                return;
+            }
+        };
+        load();
+    }, []);
 
     const stats = [
         { value: "15+", label: "Années d'Expérience", sub: "Au service de l'excellence" },
@@ -256,20 +330,67 @@ export default function Home() {
         },
     ];
 
-    const heroImages = [
-         "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&q=80&w=2000",
-         "https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&q=80&w=2000",
-         "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&q=80&w=2000",
-     ];
-
     const [currentHeroIndex, setCurrentHeroIndex] = React.useState(0);
+    const fallbackHeroSlides: HeroSlide[] = [
+        {
+            id: -1,
+            title: "Excellence en Construction, Innovation Architecturale",
+            subtitle: null,
+            description:
+                "MAC transforme vos projets en réalités durables grâce à notre expertise reconnue en construction moderne, résidentielle et industrielle à travers l'Afrique.",
+            cta_text: "Découvrir nos Services",
+            cta_link: "/services",
+            cta_secondary_text: "Voir nos Projets",
+            cta_secondary_link: "/projects",
+            image: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&q=80&w=2000",
+            overlay_opacity: 60,
+            order: 0,
+        },
+        {
+            id: -2,
+            title: "Excellence en Construction, Innovation Architecturale",
+            subtitle: null,
+            description:
+                "MAC transforme vos projets en réalités durables grâce à notre expertise reconnue en construction moderne, résidentielle et industrielle à travers l'Afrique.",
+            cta_text: "Découvrir nos Services",
+            cta_link: "/services",
+            cta_secondary_text: "Voir nos Projets",
+            cta_secondary_link: "/projects",
+            image: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&q=80&w=2000",
+            overlay_opacity: 60,
+            order: 1,
+        },
+        {
+            id: -3,
+            title: "Excellence en Construction, Innovation Architecturale",
+            subtitle: null,
+            description:
+                "MAC transforme vos projets en réalités durables grâce à notre expertise reconnue en construction moderne, résidentielle et industrielle à travers l'Afrique.",
+            cta_text: "Découvrir nos Services",
+            cta_link: "/services",
+            cta_secondary_text: "Voir nos Projets",
+            cta_secondary_link: "/projects",
+            image: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&q=80&w=2000",
+            overlay_opacity: 60,
+            order: 2,
+        },
+    ];
+    const slidesForHero =
+        heroSlides.length >= 2 ? heroSlides : fallbackHeroSlides;
+    const currentSlide = slidesForHero[currentHeroIndex] || slidesForHero[0];
+    const heroOverlayOpacity =
+        typeof currentSlide?.overlay_opacity === "number" &&
+        Number.isFinite(currentSlide.overlay_opacity)
+            ? Math.max(0, Math.min(100, currentSlide.overlay_opacity))
+            : 60;
 
     React.useEffect(() => {
+        if (slidesForHero.length < 2) return;
         const timer = setInterval(() => {
-            setCurrentHeroIndex((prev) => (prev + 1) % heroImages.length);
+            setCurrentHeroIndex((prev) => (prev + 1) % slidesForHero.length);
         }, 6000);
         return () => clearInterval(timer);
-    }, [heroImages.length]);
+    }, [slidesForHero.length]);
 
     return (
         <div className="bg-white overflow-hidden">
@@ -286,7 +407,7 @@ export default function Home() {
                             className="absolute inset-0"
                         >
                             <img
-                                 src={heroImages[currentHeroIndex]}
+                                 src={currentSlide?.image || ""}
                                  alt="Construction Background"
                                  className="w-full h-full object-cover"
                              />
@@ -295,7 +416,10 @@ export default function Home() {
                   </div>
 
                   {/* Static Overlay - Outside the animation container to ensure no interference */}
-                  <div className="absolute inset-0 z-10 bg-gradient-to-b from-[#00B8D4]/60 via-[#00B8D4]/30 to-[#212121]/90 backdrop-blur-[2px]"></div>
+                  <div
+                      className="absolute inset-0 z-10 bg-gradient-to-b from-[#00B8D4]/60 via-[#00B8D4]/30 to-[#212121]/90 backdrop-blur-[2px]"
+                      style={{ opacity: heroOverlayOpacity / 100 }}
+                  />
 
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
                     <motion.div
@@ -304,23 +428,25 @@ export default function Home() {
                         transition={{ duration: 0.8 }}
                     >
                         <h2 className="text-4xl md:text-6xl font-extrabold text-white mb-6 leading-[1.1] max-w-4xl mx-auto">
-                            Excellence en Construction, Innovation Architecturale
+                            {currentSlide?.title ||
+                                "Excellence en Construction, Innovation Architecturale"}
                         </h2>
                         <p className="text-lg md:text-xl text-white/90 mb-10 max-w-3xl mx-auto leading-relaxed">
-                            MAC transforme vos projets en réalités durables grâce à notre expertise reconnue en construction moderne, résidentielle et industrielle à travers l'Afrique.
+                            {currentSlide?.description ||
+                                "MAC transforme vos projets en réalités durables grâce à notre expertise reconnue en construction moderne, résidentielle et industrielle à travers l'Afrique."}
                         </p>
                         <div className="flex flex-col sm:flex-row gap-5 justify-center">
                             <Link
-                                to="/services"
+                                to={currentSlide?.cta_link || "/services"}
                                 className="inline-flex items-center justify-center px-8 py-4 bg-[#00B8D4] text-white font-bold rounded-xl shadow-lg shadow-[#00B8D4]/30 hover:bg-[#0097A7] hover:-translate-y-1 smooth-animation"
                             >
-                                Découvrir nos Services
+                                {currentSlide?.cta_text || "Découvrir nos Services"}
                             </Link>
                             <Link
-                                to="/projects"
+                                to={currentSlide?.cta_secondary_link || "/projects"}
                                 className="inline-flex items-center justify-center px-8 py-4 bg-white/10 backdrop-blur-md border border-white/20 text-white font-bold rounded-xl hover:bg-white/20 hover:-translate-y-1 smooth-animation"
                             >
-                                Voir nos Projets
+                                {currentSlide?.cta_secondary_text || "Voir nos Projets"}
                             </Link>
                         </div>
                     </motion.div>
@@ -418,21 +544,28 @@ export default function Home() {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-24">
-                        {features.map((feature, idx) => (
-                            <motion.div
-                                key={idx}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                className="text-center"
-                            >
-                                <div className="w-14 h-14 rounded-2xl bg-[#00B8D4]/10 text-[#00B8D4] flex items-center justify-center mx-auto mb-6">
-                                    {feature.icon}
-                                </div>
-                                <h4 className="text-lg font-bold text-[#212121] mb-3">{feature.title}</h4>
-                                <p className="text-xs text-[#616161] leading-relaxed max-w-[200px] mx-auto">{feature.desc}</p>
-                            </motion.div>
-                        ))}
+                        {features.map((feature, idx) => {
+                            const Icon = featureIconMap[feature.icon];
+                            return (
+                                <motion.div
+                                    key={idx}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    className="text-center"
+                                >
+                                    <div className="w-14 h-14 rounded-2xl bg-[#00B8D4]/10 text-[#00B8D4] flex items-center justify-center mx-auto mb-6">
+                                        <Icon className="w-8 h-8" />
+                                    </div>
+                                    <h4 className="text-lg font-bold text-[#212121] mb-3">
+                                        {feature.title}
+                                    </h4>
+                                    <p className="text-xs text-[#616161] leading-relaxed max-w-[200px] mx-auto">
+                                        {feature.desc}
+                                    </p>
+                                </motion.div>
+                            );
+                        })}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 py-16 px-8 bg-[#E0F7FA] rounded-[3rem]">

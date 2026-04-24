@@ -13,6 +13,11 @@ export default defineConfig({
         tailwindcss(),                     // ← 3rd: Tailwind processes CSS
     ],
     server: {
+        proxy: {
+            "/api": "http://localhost:8000",
+            "/sanctum": "http://localhost:8000",
+            "/storage": "http://localhost:8000",
+        },
         watch: {
             ignored: ["**/storage/framework/views/**"],
         },

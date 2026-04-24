@@ -22,6 +22,7 @@ class Project extends Model
         'gallery',
         'is_featured',
         'category_id',
+        'service_id',
         'is_published',
         'views',
     ];
@@ -43,6 +44,11 @@ class Project extends Model
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function service()
+    {
+        return $this->belongsTo(Service::class);
     }
 
     public function comments(): MorphMany

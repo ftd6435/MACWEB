@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ModalPortal from "../../components/ModalPortal";
+import ConfirmDialog from "../../components/ConfirmDialog";
 import { useToast } from "../../services/ToastContext";
 import {
     Plus,
@@ -17,8 +18,10 @@ import {
     MessageSquare,
     CheckCircle,
     XCircle,
+    Layers,
 } from "lucide-react";
 import axios from "axios";
+import ImageUploader from "../../components/ImageUploader";
 
 interface Testimonial {
     id: number;
@@ -26,8 +29,10 @@ interface Testimonial {
     role: string;
     content: string;
     image: string | null;
+    project_id: number | null;
     is_active: boolean;
     order: number;
+    project?: { id: number; title: string };
 }
 
 export default function AdminTestimonials() {
@@ -37,10 +42,17 @@ export default function AdminTestimonials() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTestimonial, setEditingTestimonial] =
         useState<Testimonial | null>(null);
+    const [pendingDelete, setPendingDelete] = useState<Testimonial | null>(null);
+    const [projects, setProjects] = useState<Array<{ id: number; title: string }>>(
+        [],
+    );
+    const [projectSearch, setProjectSearch] = useState("");
     const [formData, setFormData] = useState<Partial<Testimonial>>({
         name: "",
         role: "",
         content: "",
+        image: null,
+        project_id: null,
         is_active: true,
     });
 
@@ -51,12 +63,23 @@ export default function AdminTestimonials() {
     const fetchTestimonials = async () => {
         setIsLoading(true);
         try {
-            const response = await axios.get("/api/cms/home");
-            setTestimonials(response.data.testimonials || []);
+            const response = await axios.get("/api/admin/testimonials");
+            setTestimonials(response.data || []);
         } catch (error) {
             console.error("Failed to fetch testimonials", error);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const fetchProjects = async (search: string) => {
+        try {
+            const response = await axios.get("/api/projects", {
+                params: search ? { search } : undefined,
+            });
+            setProjects(response.data.data || []);
+        } catch (error) {
+            console.error("Failed to fetch projects", error);
         }
     };
 
@@ -70,9 +93,13 @@ export default function AdminTestimonials() {
                 name: "",
                 role: "",
                 content: "",
+                image: null,
+                project_id: null,
                 is_active: true,
             });
         }
+        setProjectSearch("");
+        fetchProjects("");
         setIsModalOpen(true);
     };
 
@@ -80,13 +107,62 @@ export default function AdminTestimonials() {
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("Saving testimonial:", formData);
-        setIsModalOpen(false);
-        toast(
-            editingTestimonial
-                ? "Témoignage mis à jour avec succès"
-                : "Témoignage créé avec succès",
-        );
+        try {
+            await axios.get("/sanctum/csrf-cookie");
+
+            const payload = {
+                name: formData.name,
+                role: formData.role,
+                content: formData.content,
+                image: formData.image,
+                project_id: formData.project_id,
+                is_active: formData.is_active ?? true,
+                order: formData.order ?? 0,
+            };
+
+            if (editingTestimonial) {
+                await axios.put(
+                    `/api/admin/testimonials/${editingTestimonial.id}`,
+                    payload,
+                );
+            } else {
+                await axios.post("/api/admin/testimonials", payload);
+            }
+
+            await fetchTestimonials();
+            setIsModalOpen(false);
+            toast(
+                editingTestimonial
+                    ? "Témoignage mis à jour avec succès"
+                    : "Témoignage créé avec succès",
+            );
+        } catch (err: any) {
+            const msg =
+                err.response?.data?.message ||
+                err.response?.data?.errors?.name?.[0] ||
+                err.response?.data?.errors?.project_id?.[0] ||
+                "Échec de l'enregistrement";
+            toast(msg, "error");
+        }
+    };
+
+    const handleDelete = async (testimonial: Testimonial) => {
+        setPendingDelete(testimonial);
+    };
+
+    const confirmDelete = async () => {
+        if (!pendingDelete) return;
+        try {
+            await axios.get("/sanctum/csrf-cookie");
+            await axios.delete(`/api/admin/testimonials/${pendingDelete.id}`);
+            await fetchTestimonials();
+            toast("Témoignage supprimé");
+            setPendingDelete(null);
+        } catch (err: any) {
+            const msg =
+                err.response?.data?.message || "Échec de la suppression";
+            toast(msg, "error");
+        }
     };
 
     const filteredTestimonials = testimonials.filter(
@@ -185,6 +261,9 @@ export default function AdminTestimonials() {
                                     <p className="text-sm text-[#757575] font-medium leading-relaxed italic">
                                         "{testimonial.content}"
                                     </p>
+                                    <p className="text-[10px] font-black text-[#9E9E9E] uppercase tracking-widest mt-4">
+                                        Projet: {testimonial.project?.title || "—"}
+                                    </p>
                                 </div>
 
                                 <div className="flex items-center space-x-3 shrink-0">
@@ -196,7 +275,12 @@ export default function AdminTestimonials() {
                                     >
                                         <Edit2 className="w-5 h-5" />
                                     </button>
-                                    <button className="p-4 bg-[#F8FAFC] text-[#616161] hover:bg-red-50 hover:text-red-500 rounded-2xl smooth-animation">
+                                    <button
+                                        onClick={() =>
+                                            handleDelete(testimonial)
+                                        }
+                                        className="p-4 bg-[#F8FAFC] text-[#616161] hover:bg-red-50 hover:text-red-500 rounded-2xl smooth-animation"
+                                    >
                                         <Trash2 className="w-5 h-5" />
                                     </button>
                                 </div>
@@ -290,6 +374,49 @@ export default function AdminTestimonials() {
 
                                     <div className="space-y-2">
                                         <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
+                                            <Layers className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
+                                            Projet
+                                        </label>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <input
+                                                type="text"
+                                                value={projectSearch}
+                                                onChange={(e) => {
+                                                    const v = e.target.value;
+                                                    setProjectSearch(v);
+                                                    fetchProjects(v);
+                                                }}
+                                                className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
+                                                placeholder="Rechercher un projet..."
+                                            />
+                                            <select
+                                                required
+                                                value={formData.project_id ?? ""}
+                                                onChange={(e) =>
+                                                    setFormData({
+                                                        ...formData,
+                                                        project_id: e.target
+                                                            .value
+                                                            ? Number(e.target.value)
+                                                            : null,
+                                                    })
+                                                }
+                                                className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
+                                            >
+                                                <option value="" disabled>
+                                                    Sélectionner un projet
+                                                </option>
+                                                {projects.map((p) => (
+                                                    <option key={p.id} value={p.id}>
+                                                        {p.title}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
                                             <MessageSquare className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
                                             Témoignage
                                         </label>
@@ -305,6 +432,23 @@ export default function AdminTestimonials() {
                                             }
                                             className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation resize-none"
                                             placeholder="Le contenu de l'avis client..."
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
+                                            <User className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
+                                            Photo (optionnel)
+                                        </label>
+                                        <ImageUploader
+                                            value={formData.image ?? null}
+                                            onChange={(url) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    image: url,
+                                                })
+                                            }
+                                            label="Choisir une image"
                                         />
                                     </div>
 
@@ -354,6 +498,20 @@ export default function AdminTestimonials() {
                     )}
                 </AnimatePresence>
             </ModalPortal>
+
+            <ConfirmDialog
+                open={!!pendingDelete}
+                title="Supprimer le témoignage ?"
+                message={
+                    pendingDelete
+                        ? `Cette action supprimera le témoignage de "${pendingDelete.name}".`
+                        : ""
+                }
+                confirmText="Supprimer"
+                cancelText="Annuler"
+                onCancel={() => setPendingDelete(null)}
+                onConfirm={confirmDelete}
+            />
         </div>
     );
 }

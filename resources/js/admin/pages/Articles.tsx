@@ -16,13 +16,16 @@ import {
     AlignLeft,
     Image as ImageIcon,
     Tag,
+    Layers,
     ExternalLink,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import ModalPortal from "../../components/ModalPortal";
 import ImageUploader from "../../components/ImageUploader";
+import ConfirmDialog from "../../components/ConfirmDialog";
 import { useToast } from "../../services/ToastContext";
+import { useAuth } from "../../services/AuthContext";
 
 interface Article {
     id: number;
@@ -32,22 +35,26 @@ interface Article {
     content: string;
     author: { id: number; name: string } | null;
     category_id: number | null;
-    published: boolean;
+    is_published: boolean;
     views: number;
     created_at: string;
     image?: string;
     category?: { name: string };
+    tags?: Array<{ id: number; name: string }>;
 }
 
 interface ArticleForm {
     title: string;
     excerpt: string;
     content: string;
-    author_name: string;
-    published: boolean;
+    is_published: boolean;
     category_id: number | null;
+    tag_ids: number[];
     image: string | null;
 }
+
+type Category = { id: number; name: string; type?: string };
+type TagItem = { id: number; name: string };
 
 export default function AdminArticles() {
     const [articles, setArticles] = useState<Article[]>([]);
@@ -55,19 +62,36 @@ export default function AdminArticles() {
     const [searchTerm, setSearchTerm] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingArticle, setEditingArticle] = useState<Article | null>(null);
+    const [pendingDelete, setPendingDelete] = useState<Article | null>(null);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [tags, setTags] = useState<TagItem[]>([]);
     const [formData, setFormData] = useState<ArticleForm>({
         title: "",
         excerpt: "",
         content: "",
-        author_name: "",
-        published: true,
+        is_published: true,
         category_id: null,
+        tag_ids: [],
         image: null,
     });
 
     useEffect(() => {
         fetchArticles();
+        fetchMeta();
     }, []);
+
+    const fetchMeta = async () => {
+        try {
+            const [catsRes, tagsRes] = await Promise.all([
+                axios.get("/api/categories?type=article,general"),
+                axios.get("/api/tags"),
+            ]);
+            setCategories(catsRes.data || []);
+            setTags(tagsRes.data || []);
+        } catch (error) {
+            console.error("Failed to fetch categories/tags", error);
+        }
+    };
 
     const fetchArticles = async () => {
         setIsLoading(true);
@@ -88,9 +112,9 @@ export default function AdminArticles() {
                 title: article.title,
                 excerpt: article.excerpt,
                 content: article.content,
-                author_name: article.author?.name || "",
-                published: article.published,
+                is_published: article.is_published,
                 category_id: article.category_id,
+                tag_ids: (article.tags || []).map((t) => t.id),
                 image: article.image || null,
             });
         } else {
@@ -99,9 +123,9 @@ export default function AdminArticles() {
                 title: "",
                 excerpt: "",
                 content: "",
-                author_name: "",
-                published: true,
+                is_published: true,
                 category_id: null,
+                tag_ids: [],
                 image: null,
             });
         }
@@ -109,16 +133,64 @@ export default function AdminArticles() {
     };
 
     const { toast } = useToast();
+    const { user } = useAuth();
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("Saving article:", formData);
-        setIsModalOpen(false);
-        toast(
-            editingArticle
-                ? "Article mis à jour avec succès"
-                : "Article créé avec succès",
-        );
+        try {
+            await axios.get("/sanctum/csrf-cookie");
+
+            const payload = {
+                title: formData.title,
+                excerpt: formData.excerpt,
+                content: formData.content,
+                image: formData.image,
+                category_id: formData.category_id,
+                tags: formData.tag_ids,
+                is_published: formData.is_published,
+                author_id: user?.id,
+            };
+
+            if (editingArticle) {
+                await axios.put(`/api/articles/${editingArticle.id}`, payload);
+            } else {
+                await axios.post("/api/articles", payload);
+            }
+
+            await fetchArticles();
+            setIsModalOpen(false);
+            toast(
+                editingArticle
+                    ? "Article mis à jour avec succès"
+                    : "Article créé avec succès",
+            );
+        } catch (err: any) {
+            const msg =
+                err.response?.data?.message ||
+                err.response?.data?.errors?.title?.[0] ||
+                err.response?.data?.errors?.category_id?.[0] ||
+                "Échec de l'enregistrement";
+            toast(msg, "error");
+        }
+    };
+
+    const handleDelete = async (article: Article) => {
+        setPendingDelete(article);
+    };
+
+    const confirmDelete = async () => {
+        if (!pendingDelete) return;
+        try {
+            await axios.get("/sanctum/csrf-cookie");
+            await axios.delete(`/api/articles/${pendingDelete.id}`);
+            await fetchArticles();
+            toast("Article supprimé");
+            setPendingDelete(null);
+        } catch (err: any) {
+            const msg =
+                err.response?.data?.message || "Échec de la suppression";
+            toast(msg, "error");
+        }
     };
 
     const filteredArticles = articles.filter(
@@ -258,15 +330,15 @@ export default function AdminArticles() {
                                           <td className="px-8 py-6">
                                               <span
                                                   className={`inline-flex items-center px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-                                                      article.published
+                                                      article.is_published
                                                           ? "bg-emerald-50 text-emerald-600 border-emerald-100"
                                                           : "bg-amber-50 text-amber-600 border-amber-100"
                                                   }`}
                                               >
                                                   <div
-                                                      className={`w-1.5 h-1.5 rounded-full mr-2 ${article.published ? "bg-emerald-500" : "bg-amber-500"}`}
+                                                      className={`w-1.5 h-1.5 rounded-full mr-2 ${article.is_published ? "bg-emerald-500" : "bg-amber-500"}`}
                                                   />
-                                                  {article.published
+                                                  {article.is_published
                                                       ? "Publié"
                                                       : "Brouillon"}
                                               </span>
@@ -283,7 +355,12 @@ export default function AdminArticles() {
                                                   >
                                                       <Edit2 className="w-4 h-4" />
                                                   </button>
-                                                  <button className="p-3 bg-[#F8FAFC] text-[#616161] hover:bg-red-50 hover:text-red-500 rounded-xl smooth-animation">
+                                                  <button
+                                                      onClick={() =>
+                                                          handleDelete(article)
+                                                      }
+                                                      className="p-3 bg-[#F8FAFC] text-[#616161] hover:bg-red-50 hover:text-red-500 rounded-xl smooth-animation"
+                                                  >
                                                       <Trash2 className="w-4 h-4" />
                                                   </button>
                                                   <a
@@ -344,45 +421,105 @@ export default function AdminArticles() {
                                     onSubmit={handleSave}
                                     className="p-10 space-y-8 overflow-y-auto custom-scrollbar"
                                 >
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
+                                            <Type className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
+                                            Titre de l'Article
+                                        </label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={formData.title}
+                                            onChange={(e) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    title: e.target.value,
+                                                })
+                                            }
+                                            className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
+                                            placeholder="Ex: 10 conseils pour votre chantier"
+                                        />
+                                    </div>
+
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div className="space-y-2">
                                             <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
-                                                <Type className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
-                                                Titre de l'Article
+                                                <Layers className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
+                                                Catégorie
                                             </label>
-                                            <input
-                                                type="text"
+                                            <select
                                                 required
-                                                value={formData.title}
+                                                value={formData.category_id ?? ""}
                                                 onChange={(e) =>
                                                     setFormData({
                                                         ...formData,
-                                                        title: e.target.value,
+                                                        category_id: e.target
+                                                            .value
+                                                            ? Number(e.target.value)
+                                                            : null,
                                                     })
                                                 }
                                                 className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
-                                                placeholder="Ex: 10 conseils pour votre chantier"
-                                            />
+                                            >
+                                                <option value="" disabled>
+                                                    Sélectionner une catégorie
+                                                </option>
+                                                {categories.map((c) => (
+                                                    <option key={c.id} value={c.id}>
+                                                        {c.name}
+                                                    </option>
+                                                ))}
+                                            </select>
                                         </div>
+
                                         <div className="space-y-2">
                                             <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
-                                                <User className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
-                                                Auteur
+                                                <Tag className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
+                                                Tags
                                             </label>
-                                            <input
-                                                type="text"
-                                                required
-                                                value={formData.author_name}
-                                                onChange={(e) =>
-                                                    setFormData({
-                                                        ...formData,
-                                                        author_name:
-                                                            e.target.value,
-                                                    })
-                                                }
-                                                className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
-                                                placeholder="Nom de l'auteur"
-                                            />
+                                            <div className="bg-[#F8FAFC] rounded-2xl border border-transparent focus-within:ring-4 focus-within:ring-[#00B8D4]/10 p-4 max-h-40 overflow-y-auto custom-scrollbar">
+                                                <div className="grid grid-cols-1 gap-3">
+                                                    {tags.map((t) => {
+                                                        const checked =
+                                                            formData.tag_ids.includes(
+                                                                t.id,
+                                                            );
+                                                        return (
+                                                            <label
+                                                                key={t.id}
+                                                                className="flex items-center gap-3 text-xs font-bold text-[#212121] cursor-pointer"
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={
+                                                                        checked
+                                                                    }
+                                                                    onChange={() => {
+                                                                        const next = checked
+                                                                            ? formData.tag_ids.filter(
+                                                                                  (id) =>
+                                                                                      id !==
+                                                                                      t.id,
+                                                                              )
+                                                                            : [
+                                                                                  ...formData.tag_ids,
+                                                                                  t.id,
+                                                                              ];
+                                                                        setFormData({
+                                                                            ...formData,
+                                                                            tag_ids: next,
+                                                                        });
+                                                                    }}
+                                                                    className="h-4 w-4 accent-[#00B8D4]"
+                                                                />
+                                                                <span className="truncate">
+                                                                    {t.name}
+                                                                </span>
+                                                            </label>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -478,17 +615,17 @@ export default function AdminArticles() {
                                             <div className="flex items-center justify-between p-6 bg-[#F8FAFC] rounded-3xl">
                                                 <div className="flex items-center space-x-3">
                                                     <div
-                                                        className={`w-12 h-6 rounded-full p-1 smooth-animation cursor-pointer ${formData.published ? "bg-[#00B8D4]" : "bg-[#E2E8F0]"}`}
+                                                        className={`w-12 h-6 rounded-full p-1 smooth-animation cursor-pointer ${formData.is_published ? "bg-[#00B8D4]" : "bg-[#E2E8F0]"}`}
                                                         onClick={() =>
                                                             setFormData({
                                                                 ...formData,
-                                                                published:
-                                                                    !formData.published,
+                                                                is_published:
+                                                                    !formData.is_published,
                                                             })
                                                         }
                                                     >
                                                         <div
-                                                            className={`w-4 h-4 bg-white rounded-full shadow-sm smooth-animation ${formData.published ? "translate-x-6" : "translate-x-0"}`}
+                                                            className={`w-4 h-4 bg-white rounded-full shadow-sm smooth-animation ${formData.is_published ? "translate-x-6" : "translate-x-0"}`}
                                                         />
                                                     </div>
                                                     <span className="text-xs font-black text-[#212121] uppercase tracking-widest">
@@ -523,6 +660,20 @@ export default function AdminArticles() {
                     )}
                 </AnimatePresence>
             </ModalPortal>
+
+            <ConfirmDialog
+                open={!!pendingDelete}
+                title="Supprimer l'article ?"
+                message={
+                    pendingDelete
+                        ? `Cette action supprimera "${pendingDelete.title}".`
+                        : ""
+                }
+                confirmText="Supprimer"
+                cancelText="Annuler"
+                onCancel={() => setPendingDelete(null)}
+                onConfirm={confirmDelete}
+            />
         </div>
     );
 }

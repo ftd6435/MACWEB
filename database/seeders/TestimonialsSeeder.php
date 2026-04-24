@@ -11,6 +11,7 @@ class TestimonialsSeeder extends Seeder
     public function run(): void
     {
         $palmiers = Project::where('slug', 'residence-les-palmiers')->first();
+        $defaultProject = $palmiers ?: Project::first();
 
         $testimonials = [
             [
@@ -20,6 +21,7 @@ class TestimonialsSeeder extends Seeder
                 'content' => 'MAC a dépassé nos attentes sur notre projet de siège social. Professionnalisme remarquable et respect des délais.',
                 'image' => 'https://i.pravatar.cc/150?u=amadou',
                 'rating' => 5,
+                'project_id' => $defaultProject?->id,
                 'is_active' => true,
                 'order' => 0,
             ],
@@ -30,6 +32,7 @@ class TestimonialsSeeder extends Seeder
                 'content' => 'La qualité de construction et l\'attention aux détails de MAC ont fait de notre hôtel une référence dans la région.',
                 'image' => 'https://i.pravatar.cc/150?u=fatou',
                 'rating' => 5,
+                'project_id' => $defaultProject?->id,
                 'is_active' => true,
                 'order' => 1,
             ],
@@ -40,6 +43,7 @@ class TestimonialsSeeder extends Seeder
                 'content' => 'Une équipe d\'experts à l\'écoute. Le suivi de chantier est transparent et rassurant.',
                 'image' => 'https://i.pravatar.cc/150?u=moussa',
                 'rating' => 5,
+                'project_id' => $defaultProject?->id,
                 'is_active' => true,
                 'order' => 2,
             ],
@@ -50,6 +54,7 @@ class TestimonialsSeeder extends Seeder
                 'content' => 'Leur approche innovante et le respect des normes environnementales m\'ont convaincue. Une expérience sans faille.',
                 'image' => 'https://i.pravatar.cc/150?u=sarah',
                 'rating' => 5,
+                'project_id' => $defaultProject?->id,
                 'is_active' => true,
                 'order' => 3,
             ],

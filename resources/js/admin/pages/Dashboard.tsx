@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
     FileText,
@@ -14,14 +14,74 @@ import {
     ChevronRight
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import axios from "axios";
 
 export default function Dashboard() {
+    const [metrics, setMetrics] = useState<any | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const fetchMetrics = async () => {
+            setIsLoading(true);
+            try {
+                const res = await axios.get("/api/admin/dashboard-metrics");
+                if (!isMounted) return;
+                setMetrics(res.data);
+            } catch {
+                if (!isMounted) return;
+                setMetrics(null);
+            } finally {
+                if (isMounted) setIsLoading(false);
+            }
+        };
+
+        fetchMetrics();
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
     const stats = [
-        { label: "Total Articles", count: 12, trend: "+2 ce mois", icon: <FileText />, color: "text-[#00B8D4]", bg: "bg-[#00B8D4]/10" },
-        { label: "Projets Actifs", count: 8, trend: "3 en cours", icon: <Briefcase />, color: "text-emerald-600", bg: "bg-emerald-50" },
-        { label: "Commentaires", count: 45, trend: "+12 nouveaux", icon: <MessageSquare />, color: "text-amber-600", bg: "bg-amber-50" },
-        { label: "Médiathèque", count: 124, trend: "1.2 GB utilisé", icon: <ImageIcon />, color: "text-purple-600", bg: "bg-purple-50" },
+        {
+            label: "Total Articles",
+            count: Number(metrics?.articles?.total || 0),
+            trend: `+${Number(metrics?.articles?.this_month || 0)} ce mois`,
+            icon: <FileText />,
+            color: "text-[#00B8D4]",
+            bg: "bg-[#00B8D4]/10",
+        },
+        {
+            label: "Projets",
+            count: Number(metrics?.projects?.total || 0),
+            trend: `${Number(metrics?.projects?.published || 0)} publiés`,
+            icon: <Briefcase />,
+            color: "text-emerald-600",
+            bg: "bg-emerald-50",
+        },
+        {
+            label: "Commentaires",
+            count: Number(metrics?.comments?.total || 0),
+            trend: `${Number(metrics?.comments?.pending || 0)} en attente`,
+            icon: <MessageSquare />,
+            color: "text-amber-600",
+            bg: "bg-amber-50",
+        },
+        {
+            label: "Médiathèque",
+            count: Number(metrics?.media?.total || 0),
+            trend: "Fichiers",
+            icon: <ImageIcon />,
+            color: "text-purple-600",
+            bg: "bg-purple-50",
+        },
     ];
+
+    const newLeadsTotal =
+        Number(metrics?.leads?.new?.contact || 0) +
+        Number(metrics?.leads?.new?.career || 0) +
+        Number(metrics?.leads?.new?.partnership || 0);
 
     return (
         <div className="space-y-10">
@@ -41,7 +101,9 @@ export default function Dashboard() {
                     </div>
                     <button className="p-3 bg-white border border-[#E2E8F0] rounded-2xl text-[#616161] hover:text-[#00B8D4] hover:border-[#00B8D4] smooth-animation relative">
                         <Bell className="w-5 h-5" />
-                        <span className="absolute top-3 right-3 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                        {!isLoading && newLeadsTotal > 0 && (
+                            <span className="absolute top-3 right-3 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                        )}
                     </button>
                 </div>
             </header>
@@ -63,7 +125,9 @@ export default function Dashboard() {
                             <span className="text-[10px] font-black text-[#9E9E9E] uppercase tracking-widest bg-[#F8FAFC] px-3 py-1 rounded-full">{stat.trend}</span>
                         </div>
                         <div>
-                            <p className="text-3xl font-black text-[#212121] mb-1">{stat.count}</p>
+                            <p className="text-3xl font-black text-[#212121] mb-1">
+                                {isLoading ? "…" : stat.count}
+                            </p>
                             <p className="text-xs font-black text-[#757575] uppercase tracking-widest">{stat.label}</p>
                         </div>
                     </motion.div>

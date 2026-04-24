@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -19,6 +20,13 @@ class LoginController extends Controller
             'email.email' => 'L\'adresse e-mail doit être valide.',
             'password.required' => 'Le mot de passe est requis.',
         ]);
+
+        $user = User::where('email', $credentials['email'])->first();
+        if ($user && $user->is_active === false) {
+            throw ValidationException::withMessages([
+                'email' => ['Ce compte est désactivé.'],
+            ]);
+        }
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();

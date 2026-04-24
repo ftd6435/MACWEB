@@ -9,7 +9,11 @@ class JobApplication extends Model
     protected $fillable = [
         'job_listing_id', 'name', 'email', 'phone',
         'position', 'resume_path', 'cover_letter',
-        'status', 'admin_notes',
+        'status', 'admin_notes', 'rejection_emailed_at',
+    ];
+
+    protected $casts = [
+        'rejection_emailed_at' => 'datetime',
     ];
 
     public function jobListing()

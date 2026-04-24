@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Category;
 use App\Models\Project;
+use App\Models\Service;
 use Illuminate\Database\Seeder;
 
 class ProjectsSeeder extends Seeder
@@ -14,6 +15,11 @@ class ProjectsSeeder extends Seeder
         $commercial = Category::where('slug', 'commercial')->first();
         $industriel = Category::where('slug', 'industriel')->first();
         $forage = Category::where('slug', 'forage')->first();
+
+        $serviceResidentiel = Service::where('slug', 'construction-residentielle')->first();
+        $serviceCommercial = Service::where('slug', 'construction-commerciale')->first();
+        $serviceIndustriel = Service::where('slug', 'construction-industrielle')->first();
+        $serviceForage = Service::where('slug', 'services-de-forage')->first();
 
         $projects = [
             [
@@ -26,6 +32,7 @@ class ProjectsSeeder extends Seeder
                 'year' => '2024',
                 'client_name' => 'Groupe Immobilier Dakar',
                 'category_id' => $residentiel?->id,
+                'service_id' => $serviceResidentiel?->id,
                 'is_featured' => true,
                 'is_published' => true,
                 'metrics' => json_encode([
@@ -68,6 +75,7 @@ class ProjectsSeeder extends Seeder
                 'year' => '2023',
                 'client_name' => 'Groupe Atlantique',
                 'category_id' => $commercial?->id,
+                'service_id' => $serviceCommercial?->id,
                 'is_featured' => true,
                 'is_published' => true,
                 'metrics' => json_encode(['area' => '35 000 m²', 'duration' => '24 mois', 'floors' => '25 étages']),
@@ -80,6 +88,7 @@ class ProjectsSeeder extends Seeder
                 'location' => 'Lomé, Togo',
                 'year' => '2022',
                 'category_id' => $industriel?->id,
+                'service_id' => $serviceIndustriel?->id,
                 'is_featured' => false,
                 'is_published' => true,
                 'metrics' => json_encode(['area' => '15 000 m²']),
@@ -93,6 +102,7 @@ class ProjectsSeeder extends Seeder
                 'year' => '2023',
                 'client_name' => 'Hôtel Prestige',
                 'category_id' => $commercial?->id,
+                'service_id' => $serviceCommercial?->id,
                 'is_featured' => true,
                 'is_published' => true,
                 'metrics' => json_encode(['rooms' => '200 chambres', 'stars' => '5 étoiles']),
@@ -105,6 +115,7 @@ class ProjectsSeeder extends Seeder
                 'location' => 'Bamako, Mali',
                 'year' => '2024',
                 'category_id' => $commercial?->id,
+                'service_id' => $serviceCommercial?->id,
                 'is_published' => true,
                 'metrics' => json_encode(['shops' => '50 boutiques']),
             ],
@@ -116,6 +127,7 @@ class ProjectsSeeder extends Seeder
                 'location' => 'Cotonou, Bénin',
                 'year' => '2021',
                 'category_id' => $commercial?->id,
+                'service_id' => $serviceCommercial?->id,
                 'is_published' => true,
                 'metrics' => json_encode(['area' => '10 hectares', 'capacity' => '5 000 étudiants']),
             ],
@@ -127,6 +139,7 @@ class ProjectsSeeder extends Seeder
                 'location' => 'Région de Kayes, Mali',
                 'year' => '2023',
                 'category_id' => $forage?->id,
+                'service_id' => $serviceForage?->id,
                 'is_published' => true,
                 'metrics' => json_encode(['wells' => '25 puits', 'villages' => '15 villages']),
             ],
@@ -138,6 +151,7 @@ class ProjectsSeeder extends Seeder
                 'location' => 'Plateau, Abidjan',
                 'year' => '2022',
                 'category_id' => $residentiel?->id,
+                'service_id' => $serviceResidentiel?->id,
                 'is_published' => true,
                 'metrics' => json_encode(['area' => '450 m²']),
             ],
@@ -149,6 +163,7 @@ class ProjectsSeeder extends Seeder
                 'location' => 'Niamey, Niger',
                 'year' => '2021',
                 'category_id' => $commercial?->id,
+                'service_id' => $serviceCommercial?->id,
                 'is_published' => true,
                 'metrics' => json_encode(['beds' => '100 lits']),
             ],
@@ -160,6 +175,7 @@ class ProjectsSeeder extends Seeder
                 'location' => 'Bobo-Dioulasso, Burkina Faso',
                 'year' => '2020',
                 'category_id' => $industriel?->id,
+                'service_id' => $serviceIndustriel?->id,
                 'is_published' => true,
                 'metrics' => json_encode(['area' => '8 000 m²']),
             ],
@@ -171,6 +187,7 @@ class ProjectsSeeder extends Seeder
                 'location' => 'Conakry, Guinée',
                 'year' => '2020',
                 'category_id' => $residentiel?->id,
+                'service_id' => $serviceResidentiel?->id,
                 'is_published' => true,
                 'metrics' => json_encode(['units' => '300 appartements']),
             ],
@@ -182,6 +199,7 @@ class ProjectsSeeder extends Seeder
                 'location' => 'Région de Ségou, Mali',
                 'year' => '2019',
                 'category_id' => $forage?->id,
+                'service_id' => $serviceForage?->id,
                 'is_published' => true,
                 'metrics' => json_encode(['wells' => '18 forages', 'population' => '12 000 habitants']),
             ],
