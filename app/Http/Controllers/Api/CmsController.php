@@ -24,13 +24,18 @@ class CmsController extends Controller
 {
     public function getGlobalData()
     {
-        return response()->json([
+        $data = [
             'settings' => SiteSetting::all()->groupBy('group'),
             'services' => Service::where('is_active', true)->orderBy('order')->get(),
             'stats' => Stat::orderBy('order')->get()->groupBy('group'),
             'offices' => Office::where('is_active', true)->orderBy('order')->get(),
             'social_links' => SocialLink::where('is_active', true)->orderBy('order')->get(),
-        ]);
+        ];
+
+        return response()->json($data)
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     public function getHomeData()

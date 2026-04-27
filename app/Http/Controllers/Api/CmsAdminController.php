@@ -42,10 +42,10 @@ class CmsAdminController extends Controller
         $i = 2;
         while (
             JobListing::where('slug', $slug)
-                ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
-                ->exists()
+            ->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId))
+            ->exists()
         ) {
-            $slug = $baseSlug.'-'.$i;
+            $slug = $baseSlug . '-' . $i;
             $i++;
         }
 
@@ -292,8 +292,50 @@ class CmsAdminController extends Controller
 
     public function updateSettings(Request $request)
     {
+        // Define which keys belong to which group
+        $groupMapping = [
+            'general' => [
+                'company_name',
+                'company_tagline',
+                'company_short_name',
+                'founded_year',
+                'footer_description',
+                'copyright_text',
+                'work_process',
+                'team_size_note'
+            ],
+            'contact' => [
+                'main_email',
+                'main_phone',
+                'main_address',
+                'hr_email',
+                'opening_hours',
+                'response_time',
+                'map_lat',
+                'map_lng',
+                'map_embed_url'
+            ],
+            'appearance' => [
+                'header_logo',
+                'footer_logo',
+                'primary_color'
+            ],
+        ];
+
         foreach ($request->all() as $key => $value) {
-            SiteSetting::updateOrCreate(['key' => $key], ['value' => $value]);
+            // Determine the group for this key
+            $group = 'general'; // default group
+            foreach ($groupMapping as $groupName => $keys) {
+                if (in_array($key, $keys)) {
+                    $group = $groupName;
+                    break;
+                }
+            }
+
+            SiteSetting::updateOrCreate(
+                ['key' => $key],
+                ['value' => $value, 'group' => $group]
+            );
         }
 
         return response()->json(['message' => 'Settings updated']);
@@ -622,7 +664,7 @@ class CmsAdminController extends Controller
     {
         $validated = $request->validate([
             'title' => 'string|max:255',
-            'slug' => 'nullable|string|unique:job_listings,slug,'.$jobListing->id,
+            'slug' => 'nullable|string|unique:job_listings,slug,' . $jobListing->id,
             'department' => 'nullable|string',
             'location' => 'nullable|string',
             'contract_type' => 'nullable|string',
@@ -700,7 +742,7 @@ class CmsAdminController extends Controller
 
         $fullPath = $disk->path($relativePath);
         $ext = pathinfo($fullPath, PATHINFO_EXTENSION);
-        $safeName = 'cv-'.$jobApplication->id.($ext ? '.'.$ext : '');
+        $safeName = 'cv-' . $jobApplication->id . ($ext ? '.' . $ext : '');
 
         return response()->download($fullPath, $safeName);
     }
@@ -733,8 +775,8 @@ class CmsAdminController extends Controller
                 $logoUrl = $logoPath;
             } elseif (is_string($logoPath)) {
                 $logoUrl = str_starts_with($logoPath, '/')
-                    ? $appUrl.$logoPath
-                    : $appUrl.'/'.$logoPath;
+                    ? $appUrl . $logoPath
+                    : $appUrl . '/' . $logoPath;
             }
         }
 
@@ -783,8 +825,8 @@ class CmsAdminController extends Controller
                 $logoUrl = $logoPath;
             } elseif (is_string($logoPath)) {
                 $logoUrl = str_starts_with($logoPath, '/')
-                    ? $appUrl.$logoPath
-                    : $appUrl.'/'.$logoPath;
+                    ? $appUrl . $logoPath
+                    : $appUrl . '/' . $logoPath;
             }
         }
 
@@ -825,11 +867,11 @@ class CmsAdminController extends Controller
             foreach ($apps as $app) {
                 $body =
                     "Bonjour {$app->name},\n\n"
-                    ."Nous vous remercions d’avoir pris le temps de postuler au poste « {$jobListing->title} ».\n\n"
-                    ."Après étude attentive de votre candidature, nous ne pouvons malheureusement pas y donner une suite favorable à ce stade.\n\n"
-                    ."Nous vous remercions pour l’intérêt porté à {$companyName} et vous souhaitons pleine réussite dans vos démarches.\n\n"
-                    ."Cordialement,\n"
-                    .'Équipe RH';
+                    . "Nous vous remercions d’avoir pris le temps de postuler au poste « {$jobListing->title} ».\n\n"
+                    . "Après étude attentive de votre candidature, nous ne pouvons malheureusement pas y donner une suite favorable à ce stade.\n\n"
+                    . "Nous vous remercions pour l’intérêt porté à {$companyName} et vous souhaitons pleine réussite dans vos démarches.\n\n"
+                    . "Cordialement,\n"
+                    . 'Équipe RH';
 
                 Mail::to($app->email)->queue(
                     new BrandedOutboundMessage(
