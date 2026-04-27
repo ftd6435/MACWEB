@@ -247,6 +247,8 @@ export default function Home() {
         order: number;
     };
     const [heroSlides, setHeroSlides] = React.useState<HeroSlide[]>([]);
+    const [contactPhone, setContactPhone] = React.useState("+224 622 14 67 14");
+    const [contactEmail, setContactEmail] = React.useState("contact@mac-construction.com");
 
     React.useEffect(() => {
         const load = async () => {
@@ -311,6 +313,18 @@ export default function Home() {
                 // Recent Articles (Blog Posts)
                 if (Array.isArray(res.data?.recent_articles)) {
                     setBlogPosts(res.data.recent_articles);
+                }
+
+                // Load contact info from global settings
+                const globalRes = await axios.get("/api/cms/global");
+                const settings = globalRes.data?.settings;
+                if (settings) {
+                    const contactGroup = settings.contact || [];
+                    const phone = contactGroup.find((s: any) => s.key === 'main_phone')?.value;
+                    const email = contactGroup.find((s: any) => s.key === 'main_email')?.value;
+
+                    if (phone) setContactPhone(String(phone));
+                    if (email) setContactEmail(String(email));
                 }
             } catch {
                 return;
@@ -691,13 +705,13 @@ export default function Home() {
                             </Link>
 
                             <div className="flex flex-wrap justify-center gap-8 md:gap-16">
-                                <a href="tel:+221775184567" className="flex items-center space-x-3 font-bold group text-sm">
+                                <a href={`tel:${contactPhone.replace(/\s/g, '')}`} className="flex items-center space-x-3 font-bold group text-sm">
                                     <Phone className="w-5 h-5" />
-                                    <span>+224 622 14 67 14</span>
+                                    <span>{contactPhone}</span>
                                 </a>
-                                <a href="mailto:contact@mac-construction.com" className="flex items-center space-x-3 font-bold group text-sm">
+                                <a href={`mailto:${contactEmail}`} className="flex items-center space-x-3 font-bold group text-sm">
                                     <Mail className="w-5 h-5" />
-                                    <span>contact@mac-construction.com</span>
+                                    <span>{contactEmail}</span>
                                 </a>
                             </div>
                         </div>
