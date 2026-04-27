@@ -31,6 +31,20 @@ type ServiceItem = {
     order: number;
 };
 
+type ProcessStep = {
+    num: string;
+    title: string;
+    desc: string;
+};
+
+type StatItem = {
+    id: number;
+    label: string;
+    value: string;
+    group: string;
+    order: number;
+};
+
 export default function Services() {
     const [heroTitle, setHeroTitle] = React.useState("Nos Services");
     const [heroDescription, setHeroDescription] = React.useState(
@@ -41,10 +55,17 @@ export default function Services() {
     );
     const [overlayOpacity, setOverlayOpacity] = React.useState(60);
     const [services, setServices] = React.useState<ServiceItem[]>([]);
+    const [processSteps, setProcessSteps] = React.useState<ProcessStep[]>([]);
+    const [stats, setStats] = React.useState<StatItem[]>([]);
+    const [workProcess, setWorkProcess] = React.useState<ProcessStep[]>([]);
+    const [contactPhone, setContactPhone] = React.useState("+221 77 518 45 67");
+    const [contactEmail, setContactEmail] = React.useState("contact@mac-construction.com");
+    const [contactAddress, setContactAddress] = React.useState("12 Avenue Cheikh Anta Diop, Dakar, Sénégal");
 
     React.useEffect(() => {
         const load = async () => {
             try {
+                // Load services data
                 const res = await axios.get("/api/cms/services");
                 const hero = Array.isArray(res.data?.hero_slides)
                     ? res.data.hero_slides[0]
@@ -67,6 +88,48 @@ export default function Services() {
                     setOverlayOpacity(
                         Math.max(0, Math.min(100, hero.overlay_opacity)),
                     );
+                }
+
+                // Load stats from both home and about pages
+                const [homeRes, aboutRes] = await Promise.all([
+                    axios.get("/api/cms/home"),
+                    axios.get("/api/cms/about")
+                ]);
+
+                const allStats: StatItem[] = [];
+                if (Array.isArray(homeRes.data?.stats)) {
+                    allStats.push(...homeRes.data.stats);
+                }
+                if (Array.isArray(aboutRes.data?.stats)) {
+                    allStats.push(...aboutRes.data.stats);
+                }
+                setStats(allStats);
+
+                // Load contact info and work process from settings
+                const settingsRes = await axios.get("/api/cms/global");
+                const settings = settingsRes.data?.settings;
+                if (settings) {
+                    const contactGroup = settings.contact || [];
+                    const generalGroup = settings.general || [];
+
+                    const phone = contactGroup.find((s: any) => s.key === 'main_phone')?.value;
+                    const email = contactGroup.find((s: any) => s.key === 'main_email')?.value;
+                    const address = contactGroup.find((s: any) => s.key === 'main_address')?.value;
+                    const workProcessData = generalGroup.find((s: any) => s.key === 'work_process')?.value;
+
+                    if (phone) setContactPhone(String(phone));
+                    if (email) setContactEmail(String(email));
+                    if (address) setContactAddress(String(address));
+                    if (workProcessData) {
+                        const parsed = typeof workProcessData === 'string' ? JSON.parse(workProcessData) : workProcessData;
+                        if (Array.isArray(parsed)) {
+                            setWorkProcess(parsed.map((step: any) => ({
+                                num: String(step.number || step.num || ''),
+                                title: String(step.title || ''),
+                                desc: String(step.description || step.desc || '')
+                            })));
+                        }
+                    }
                 }
             } catch {
                 return;
@@ -181,13 +244,16 @@ export default function Services() {
                   },
               ];
 
-    const workSteps = [
+    // Fallback process steps if none loaded from API
+    const defaultWorkSteps: ProcessStep[] = [
         { num: "1", title: "Consultation Initiale", desc: "Analyse de vos besoins et définition des objectifs du projet." },
         { num: "2", title: "Étude et Devis", desc: "Conception technique détaillée avec devis transparent et planifié." },
         { num: "3", title: "Planification", desc: "Organisation des ressources, obtention des autorisations et calendrier." },
         { num: "4", title: "Exécution", desc: "Réalisation avec contrôle qualité continu et communication régulière." },
         { num: "5", title: "Livraison et Suivi", desc: "Réception finale avec garanties et suivi de maintenance." }
     ];
+
+    const workSteps = workProcess.length > 0 ? workProcess : (processSteps.length > 0 ? processSteps : defaultWorkSteps);
 
     return (
         <div className="bg-white overflow-hidden">
@@ -298,45 +364,6 @@ export default function Services() {
                 </div>
             </section>
 
-            {/* Forage Section */}
-            <section className="py-24 bg-white">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-20">
-                        <h2 className="text-4xl font-black text-[#212121] mb-4">Services de Forage</h2>
-                        <p className="text-[#616161] max-w-2xl mx-auto">
-                            Expertise technique avancée en forage avec des équipements de pointe pour tous types d'interventions.
-                        </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start mb-20">
-                        <div className="space-y-8">
-                            <h3 className="text-2xl font-black text-[#212121]">Forage Professionnel Multi-Secteurs</h3>
-                            <div className="space-y-6">
-                                {[
-                                    { icon: <Droplets className="w-6 h-6" />, title: "Forage d'Eau", desc: "Puits pour particuliers, irrigation et usage industriel avec analyse géophysique complète." },
-                                    { icon: <Settings className="w-6 h-6" />, title: "Forage Géotechnique", desc: "Solutions d'exploration du sol pour vos projets d'infrastructure et d'ingénierie." },
-                                    { icon: <Zap className="w-6 h-6" />, title: "Forage d'Exploration", desc: "Études géologiques et minérales pour des solutions de projets de grande envergure." }
-                                ].map((forage, i) => (
-                                    <div key={i} className="flex items-start space-x-6 p-6 rounded-2xl bg-[#F8FAFC] border border-[#F1F5F9]">
-                                        <div className="w-12 h-12 rounded-xl bg-[#00B8D4] text-white flex items-center justify-center shrink-0">
-                                            {forage.icon}
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-[#212121] mb-2">{forage.title}</h4>
-                                            <p className="text-sm text-[#616161] leading-relaxed">{forage.desc}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="space-y-6">
-                            <img src="https://images.unsplash.com/photo-1533241242276-888998064956?q=80&w=1000&auto=format&fit=crop" alt="Forage Rig" className="rounded-[2.5rem] shadow-xl w-full h-[300px] object-cover" />
-                            <img src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=1000&auto=format&fit=crop" alt="Mining" className="rounded-[2.5rem] shadow-xl w-full h-[300px] object-cover" />
-                        </div>
-                    </div>
-                </div>
-            </section>
-
             {/* Work Method */}
             <section className="py-24 bg-[#F8FAFC]">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -362,23 +389,34 @@ export default function Services() {
                         ))}
                     </div>
 
-                    <div className="mt-24 grid grid-cols-1 md:grid-cols-3 gap-8 py-16 px-12 bg-[#E0F7FA] rounded-[3rem]">
-                        <div className="text-center border-b md:border-b-0 md:border-r border-[#B2EBF2] pb-8 md:pb-0">
-                            <p className="text-4xl font-black text-[#00B8D4] mb-2">98%</p>
-                            <p className="text-sm font-bold text-[#212121]">Projets à Temps</p>
-                            <p className="text-[10px] text-[#757575] uppercase tracking-widest font-bold">Respect des délais</p>
+                    {stats.length > 0 ? (
+                        <div className="mt-24 grid grid-cols-1 md:grid-cols-3 gap-8 py-16 px-12 bg-[#E0F7FA] rounded-[3rem]">
+                            {stats.slice(0, 3).map((stat, idx) => (
+                                <div key={stat.id} className={`text-center ${idx < 2 ? 'border-b md:border-b-0 md:border-r border-[#B2EBF2]' : ''} ${idx === 1 ? 'py-8 md:py-0' : idx === 0 ? 'pb-8 md:pb-0' : 'pt-8 md:pt-0'}`}>
+                                    <p className="text-4xl font-black text-[#00B8D4] mb-2">{stat.value}</p>
+                                    <p className="text-sm font-bold text-[#212121]">{stat.label}</p>
+                                </div>
+                            ))}
                         </div>
-                        <div className="text-center border-b md:border-b-0 md:border-r border-[#B2EBF2] py-8 md:py-0">
-                            <p className="text-4xl font-black text-[#00B8D4] mb-2">15+</p>
-                            <p className="text-sm font-bold text-[#212121]">Années d'Expérience</p>
-                            <p className="text-[10px] text-[#757575] uppercase tracking-widest font-bold">Expertise reconnue</p>
+                    ) : (
+                        <div className="mt-24 grid grid-cols-1 md:grid-cols-3 gap-8 py-16 px-12 bg-[#E0F7FA] rounded-[3rem]">
+                            <div className="text-center border-b md:border-b-0 md:border-r border-[#B2EBF2] pb-8 md:pb-0">
+                                <p className="text-4xl font-black text-[#00B8D4] mb-2">98%</p>
+                                <p className="text-sm font-bold text-[#212121]">Projets à Temps</p>
+                                <p className="text-[10px] text-[#757575] uppercase tracking-widest font-bold">Respect des délais</p>
+                            </div>
+                            <div className="text-center border-b md:border-b-0 md:border-r border-[#B2EBF2] py-8 md:py-0">
+                                <p className="text-4xl font-black text-[#00B8D4] mb-2">15+</p>
+                                <p className="text-sm font-bold text-[#212121]">Années d'Expérience</p>
+                                <p className="text-[10px] text-[#757575] uppercase tracking-widest font-bold">Expertise reconnue</p>
+                            </div>
+                            <div className="text-center pt-8 md:pt-0">
+                                <p className="text-4xl font-black text-[#00B8D4] mb-2">100%</p>
+                                <p className="text-sm font-bold text-[#212121]">Satisfaction Client</p>
+                                <p className="text-[10px] text-[#757575] uppercase tracking-widest font-bold">Objectif prioritaire</p>
+                            </div>
                         </div>
-                        <div className="text-center pt-8 md:pt-0">
-                            <p className="text-4xl font-black text-[#00B8D4] mb-2">100%</p>
-                            <p className="text-sm font-bold text-[#212121]">Satisfaction Client</p>
-                            <p className="text-[10px] text-[#757575] uppercase tracking-widest font-bold">Objectif prioritaire</p>
-                        </div>
-                    </div>
+                    )}
                 </div>
             </section>
 
@@ -420,7 +458,7 @@ export default function Services() {
                                         </div>
                                         <div>
                                             <p className="text-xs font-bold text-white/60 uppercase tracking-widest mb-1">Téléphone</p>
-                                            <p className="text-lg font-bold">+221 77 518 45 67</p>
+                                            <p className="text-lg font-bold">{contactPhone}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center space-x-6 group">
@@ -429,7 +467,7 @@ export default function Services() {
                                         </div>
                                         <div>
                                             <p className="text-xs font-bold text-white/60 uppercase tracking-widest mb-1">Email</p>
-                                            <p className="text-lg font-bold">contact@mac-construction.com</p>
+                                            <p className="text-lg font-bold">{contactEmail}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center space-x-6 group">
@@ -438,7 +476,7 @@ export default function Services() {
                                         </div>
                                         <div>
                                             <p className="text-xs font-bold text-white/60 uppercase tracking-widest mb-1">Adresse</p>
-                                            <p className="text-lg font-bold">12 Avenue Cheikh Anta Diop, Dakar, Sénégal</p>
+                                            <p className="text-lg font-bold">{contactAddress}</p>
                                         </div>
                                     </div>
                                 </div>

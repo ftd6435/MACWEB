@@ -513,7 +513,7 @@ export default function Careers() {
                                 <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9E9E9E] w-4 h-4" />
                                 <input
                                     type="tel"
-                                    placeholder="+224 XX XXX XX XX"
+                                    placeholder="+224 XXX XXX XXX"
                                     value={phone}
                                     onChange={(e) => setPhone(e.target.value)}
                                     className="w-full pl-12 pr-6 py-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl focus:ring-2 focus:ring-[#00B8D4] outline-none text-sm font-medium smooth-animation"

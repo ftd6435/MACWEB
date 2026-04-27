@@ -11,6 +11,8 @@ class Comment extends Model
         'email',
         'content',
         'approved',
+        'commentable_type',
+        'commentable_id',
     ];
 
     protected $casts = [

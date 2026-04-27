@@ -27,8 +27,19 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 
-const TestimonialsSlider = () => {
-    const testimonials = [
+type Testimonial = {
+    id?: number;
+    name: string;
+    role: string;
+    company?: string;
+    content?: string;
+    text?: string;
+    image: string | null;
+};
+
+const TestimonialsSlider = ({ testimonials = [] }: { testimonials?: Testimonial[] }) => {
+    // Use fallback if no testimonials provided
+    const defaultTestimonials: Testimonial[] = [
         {
             name: "Amadou Diallo",
             role: "PDG, Groupe Atlantique",
@@ -55,6 +66,8 @@ const TestimonialsSlider = () => {
         }
     ];
 
+    const displayTestimonials = testimonials.length > 0 ? testimonials : defaultTestimonials;
+
     const [currentIndex, setCurrentIndex] = React.useState(0);
     const [isMobile, setIsMobile] = React.useState(window.innerWidth < 1024);
 
@@ -68,7 +81,7 @@ const TestimonialsSlider = () => {
 
         const timer = setInterval(() => {
             setCurrentIndex((prev) => {
-                const max = isMobile ? testimonials.length - 1 : Math.ceil(testimonials.length / 2) - 1;
+                const max = isMobile ? displayTestimonials.length - 1 : Math.ceil(displayTestimonials.length / 2) - 1;
                 return prev >= max ? 0 : prev + 1;
             });
         }, 5000);
@@ -77,7 +90,7 @@ const TestimonialsSlider = () => {
             window.removeEventListener("resize", handleResize);
             clearInterval(timer);
         };
-    }, [isMobile, testimonials.length]);
+    }, [isMobile, displayTestimonials.length]);
 
     return (
         <div className="relative overflow-hidden py-10 w-full">
@@ -87,13 +100,13 @@ const TestimonialsSlider = () => {
             >
                 {isMobile ? (
                     // Mobile: 1 card per slide
-                    testimonials.map((t, i) => (
+                    displayTestimonials.map((t, i) => (
                         <div key={i} className="w-full flex-shrink-0 px-4">
                             <div className="bg-[#F8FAFC] p-10 rounded-[2.5rem] border border-[#F1F5F9] relative text-center flex flex-col items-center mx-auto max-w-lg">
                                 <Quote className="absolute top-8 right-8 w-12 h-12 text-[#00B8D4]/5" />
-                                <img src={t.image} alt={t.name} className="w-16 h-16 rounded-full object-cover mb-4 border-4 border-white shadow-md" />
+                                <img src={t.image || 'https://i.pravatar.cc/150'} alt={t.name} className="w-16 h-16 rounded-full object-cover mb-4 border-4 border-white shadow-md" />
                                 <p className="text-sm text-[#616161] leading-relaxed italic mb-6">
-                                    "{t.text}"
+                                    "{t.content || t.text}"
                                 </p>
                                 <h4 className="font-bold text-[#212121] text-base">{t.name}</h4>
                                 <p className="text-[10px] text-[#00B8D4] font-bold uppercase tracking-widest mt-1">{t.role}</p>
@@ -102,15 +115,15 @@ const TestimonialsSlider = () => {
                     ))
                 ) : (
                     // Desktop: 2 cards per slide
-                    Array.from({ length: Math.ceil(testimonials.length / 2) }).map((_, slideIdx) => (
+                    Array.from({ length: Math.ceil(displayTestimonials.length / 2) }).map((_, slideIdx) => (
                         <div key={slideIdx} className="w-full flex-shrink-0 px-4">
                             <div className="grid grid-cols-2 gap-8 w-full">
-                                {testimonials.slice(slideIdx * 2, slideIdx * 2 + 2).map((t, i) => (
+                                {displayTestimonials.slice(slideIdx * 2, slideIdx * 2 + 2).map((t, i) => (
                                     <div key={i} className="bg-[#F8FAFC] p-10 rounded-[2.5rem] border border-[#F1F5F9] relative text-center flex flex-col items-center h-full">
                                         <Quote className="absolute top-8 right-8 w-12 h-12 text-[#00B8D4]/5" />
-                                        <img src={t.image} alt={t.name} className="w-16 h-16 rounded-full object-cover mb-4 border-4 border-white shadow-md" />
+                                        <img src={t.image || 'https://i.pravatar.cc/150'} alt={t.name} className="w-16 h-16 rounded-full object-cover mb-4 border-4 border-white shadow-md" />
                                         <p className="text-sm text-[#616161] leading-relaxed italic mb-6 flex-1">
-                                            "{t.text}"
+                                            "{t.content || t.text}"
                                         </p>
                                         <h4 className="font-bold text-[#212121] text-base">{t.name}</h4>
                                         <p className="text-[10px] text-[#00B8D4] font-bold uppercase tracking-widest mt-1">{t.role}</p>
@@ -123,7 +136,7 @@ const TestimonialsSlider = () => {
             </div>
 
             <div className="flex justify-center space-x-2 mt-8">
-                {Array.from({ length: isMobile ? testimonials.length : Math.ceil(testimonials.length / 2) }).map((_, i) => (
+                {Array.from({ length: isMobile ? displayTestimonials.length : Math.ceil(displayTestimonials.length / 2) }).map((_, i) => (
                     <button
                         key={i}
                         onClick={() => setCurrentIndex(i)}
@@ -135,74 +148,52 @@ const TestimonialsSlider = () => {
     );
 };
 
-export default function Home() {
-    const services = [
-        {
-            icon: <HomeIcon className="w-10 h-10 text-[#00B8D4]" />,
-            title: "Construction Résidentielle",
-            desc: "Maisons individuelles, résidences et complexes d'habitation modernes.",
-        },
-        {
-            icon: <Building className="w-10 h-10 text-[#00B8D4]" />,
-            title: "Construction Commerciale",
-            desc: "Bureaux, centres commerciaux et espaces d'affaires contemporains.",
-        },
-        {
-            icon: <Factory className="w-10 h-10 text-[#00B8D4]" />,
-            title: "Construction Industrielle",
-            desc: "Usines, entrepôts et installations industrielles adaptées.",
-        },
-        {
-            icon: <Droplets className="w-10 h-10 text-[#00B8D4]" />,
-            title: "Forage",
-            desc: "Services de forage professionnel pour tous types de terrains.",
-        },
-    ];
+type ServiceItem = {
+    id?: number;
+    title: string;
+    slug?: string;
+    description: string;
+    icon: string | null;
+    image?: string | null;
+};
 
-    const projects = [
-        {
-            id: 1,
-            title: "Résidence Les Palmiers",
-            category: "Complexe Résidentiel",
-            location: "Dakar",
-            image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=800&auto=format&fit=crop",
-        },
-        {
-            id: 2,
-            title: "Centre d'Affaires Atlantique",
-            category: "Bureau Commercial",
-            location: "Abidjan",
-            image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=800&auto=format&fit=crop",
-        },
-        {
-            id: 3,
-            title: "Usine Textile Moderne",
-            category: "Installation Industrielle",
-            location: "Lomé",
-            image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=800&auto=format&fit=crop",
-        },
-        {
-            id: 4,
-            title: "Hôtel Prestige Sahel",
-            category: "Hôtellerie",
-            location: "Ouagadougou",
-            image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=800&auto=format&fit=crop",
-        },
-        {
-            id: 5,
-            title: "Centre Commercial Baobab",
-            category: "Commerce",
-            location: "Bamako",
-            image: "https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?q=80&w=800&auto=format&fit=crop",
-        },
-        {
-            id: 6,
-            title: "Campus Universitaire Innovation",
-            category: "Éducation",
-            location: "Cotonou",
-            image: "https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=800&auto=format&fit=crop",
-        },
-    ];
+type ProjectItem = {
+    id: number;
+    slug: string;
+    title: string;
+    description?: string;
+    image: string | null;
+    location: string | null;
+    year?: string | null;
+    category?: { id: number; name: string } | null;
+};
+
+type StatItem = {
+    id?: number;
+    label: string;
+    value: string;
+    sub?: string;
+    icon?: string;
+};
+
+type ArticleItem = {
+    id: number;
+    slug: string;
+    title: string;
+    excerpt?: string;
+    image: string | null;
+    published_at: string;
+    author?: { name: string };
+    category?: { name: string };
+};
+
+export default function Home() {
+    // State for all dynamic data
+    const [services, setServices] = React.useState<ServiceItem[]>([]);
+    const [projects, setProjects] = React.useState<ProjectItem[]>([]);
+    const [testimonials, setTestimonials] = React.useState<Testimonial[]>([]);
+    const [stats, setStats] = React.useState<StatItem[]>([]);
+    const [blogPosts, setBlogPosts] = React.useState<ArticleItem[]>([]);
 
     const featureIconMap = {
         Award,
@@ -261,38 +252,66 @@ export default function Home() {
         const load = async () => {
             try {
                 const res = await axios.get("/api/cms/home");
+
+                // Hero Slides
                 const slides = Array.isArray(res.data?.hero_slides)
                     ? (res.data.hero_slides as HeroSlide[])
                     : [];
                 if (slides.length > 0) setHeroSlides(slides);
 
+                // Home Features (existing code)
                 const list = Array.isArray(res.data?.home_features)
                     ? res.data.home_features
                     : null;
-                if (!list) return;
+                if (list) {
+                    const mapped: FeatureItem[] = list
+                        .slice()
+                        .sort(
+                            (a: any, b: any) =>
+                                (a?.order ?? 0) - (b?.order ?? 0),
+                        )
+                        .map((item: any) => {
+                            const iconName = String(item?.icon || "Award");
+                            const safeIcon =
+                                iconName in featureIconMap
+                                    ? (iconName as FeatureItem["icon"])
+                                    : "Award";
 
-                const mapped: FeatureItem[] = list
-                    .slice()
-                    .sort(
-                        (a: any, b: any) =>
-                            (a?.order ?? 0) - (b?.order ?? 0),
-                    )
-                    .map((item: any) => {
-                        const iconName = String(item?.icon || "Award");
-                        const safeIcon =
-                            iconName in featureIconMap
-                                ? (iconName as FeatureItem["icon"])
-                                : "Award";
+                            return {
+                                title: String(item?.label || ""),
+                                desc: String(item?.value || ""),
+                                icon: safeIcon,
+                            };
+                        })
+                        .filter((f: FeatureItem) => f.title.trim().length > 0);
 
-                        return {
-                            title: String(item?.label || ""),
-                            desc: String(item?.value || ""),
-                            icon: safeIcon,
-                        };
-                    })
-                    .filter((f: FeatureItem) => f.title.trim().length > 0);
+                    if (mapped.length > 0) setFeatures(mapped);
+                }
 
-                if (mapped.length > 0) setFeatures(mapped);
+                // Services
+                if (Array.isArray(res.data?.services)) {
+                    setServices(res.data.services);
+                }
+
+                // Featured Projects
+                if (Array.isArray(res.data?.featured_projects)) {
+                    setProjects(res.data.featured_projects);
+                }
+
+                // Testimonials
+                if (Array.isArray(res.data?.testimonials)) {
+                    setTestimonials(res.data.testimonials);
+                }
+
+                // Stats
+                if (Array.isArray(res.data?.stats)) {
+                    setStats(res.data.stats);
+                }
+
+                // Recent Articles (Blog Posts)
+                if (Array.isArray(res.data?.recent_articles)) {
+                    setBlogPosts(res.data.recent_articles);
+                }
             } catch {
                 return;
             }
@@ -300,35 +319,29 @@ export default function Home() {
         load();
     }, []);
 
-    const stats = [
-        { value: "15+", label: "Années d'Expérience", sub: "Au service de l'excellence" },
-        { value: "200+", label: "Projets Livrés", sub: "Réalisations de qualité" },
-        { value: "98%", label: "Clients Satisfaits", sub: "Taux de satisfaction" },
-    ];
+    // Icon mapping for services
+    const serviceIconMap: Record<string, JSX.Element> = {
+        Home: <HomeIcon className="w-10 h-10 text-[#00B8D4]" />,
+        Building2: <Building className="w-10 h-10 text-[#00B8D4]" />,
+        Building: <Building className="w-10 h-10 text-[#00B8D4]" />,
+        Factory: <Factory className="w-10 h-10 text-[#00B8D4]" />,
+        Droplets: <Droplets className="w-10 h-10 text-[#00B8D4]" />,
+    };
 
-    const blogPosts = [
-        {
-            id: 1,
-            title: "Les Tendances de Construction Durable en Afrique",
-            date: "12 Septembre 2024",
-            image: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&q=80&w=800",
-            excerpt: "Comment l'innovation durable transforme les pratiques de construction locales pour un avenir plus vert."
-        },
-        {
-            id: 2,
-            title: "Optimiser la Planification de Votre Projet",
-            date: "08 Septembre 2024",
-            image: "https://images.unsplash.com/photo-1503387762-592dee58c160?auto=format&fit=crop&q=80&w=800",
-            excerpt: "Les étapes clés pour assurer la réussite de votre projet de construction, de la conception à la livraison."
-        },
-        {
-            id: 3,
-            title: "Innovations Technologiques en Construction",
-            date: "05 Septembre 2024",
-            image: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&q=80&w=800",
-            excerpt: "L'impact des nouvelles technologies sur l'efficacité, la sécurité et la qualité des chantiers modernes."
-        },
-    ];
+    const getServiceIcon = (iconName: string | null | undefined) => {
+        if (!iconName) return <Building className="w-10 h-10 text-[#00B8D4]" />;
+        return serviceIconMap[iconName] || <Building className="w-10 h-10 text-[#00B8D4]" />;
+    };
+
+    // Format date helper
+    const formatDate = (dateString: string) => {
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+        } catch {
+            return dateString;
+        }
+    };
 
     const [currentHeroIndex, setCurrentHeroIndex] = React.useState(0);
     const fallbackHeroSlides: HeroSlide[] = [
@@ -464,9 +477,9 @@ export default function Home() {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {services.map((service, idx) => (
+                        {services.length > 0 ? services.map((service, idx) => (
                             <motion.div
-                                key={idx}
+                                key={service.id || idx}
                                 initial={{ opacity: 0, y: 20 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
@@ -474,12 +487,16 @@ export default function Home() {
                                 className="group p-8 bg-[#E0F7FA] rounded-2xl border border-[#F1F5F9] shadow-sm hover:shadow-xl smooth-animation text-center"
                             >
                                 <div className="w-14 h-14 rounded-xl bg-white flex items-center justify-center mb-6 mx-auto group-hover:bg-[#00B8D4]/10 smooth-animation">
-                                    {service.icon}
+                                    {getServiceIcon(service.icon)}
                                 </div>
                                 <h4 className="text-lg font-bold text-[#212121] mb-3 leading-tight">{service.title}</h4>
-                                <p className="text-[#616161] text-xs leading-relaxed">{service.desc}</p>
+                                <p className="text-[#616161] text-xs leading-relaxed">{service.description}</p>
                             </motion.div>
-                        ))}
+                        )) : (
+                            <div className="col-span-full text-center py-8 text-[#9E9E9E]">
+                                <p>Chargement des services...</p>
+                            </div>
+                        )}
                     </div>
 
                     <div className="text-center mt-12">
@@ -501,9 +518,9 @@ export default function Home() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {projects.map((project, idx) => (
+                        {projects.length > 0 ? projects.map((project, idx) => (
                             <motion.div
-                                key={idx}
+                                key={project.id}
                                 initial={{ opacity: 0, y: 20 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
@@ -512,17 +529,23 @@ export default function Home() {
                             >
                                 <div className="aspect-[4/3] overflow-hidden relative">
                                     <img
-                                        src={project.image}
+                                        src={project.image || 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=800&auto=format&fit=crop'}
                                         alt={project.title}
                                         className="w-full h-full object-cover group-hover:scale-110 smooth-animation"
                                     />
                                 </div>
                                 <div className="p-6">
                                     <h3 className="text-lg font-bold text-[#212121] mb-1">{project.title}</h3>
-                                    <p className="text-xs text-[#757575] font-medium">{project.category} • {project.location}</p>
+                                    <p className="text-xs text-[#757575] font-medium">
+                                        {project.category?.name || 'Projet'} • {project.location || 'Location'}
+                                    </p>
                                 </div>
                             </motion.div>
-                        ))}
+                        )) : (
+                            <div className="col-span-full text-center py-8 text-[#9E9E9E]">
+                                <p>Chargement des projets...</p>
+                            </div>
+                        )}
                     </div>
 
                     <div className="text-center mt-12">
@@ -569,13 +592,17 @@ export default function Home() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 py-16 px-8 bg-[#E0F7FA] rounded-[3rem]">
-                        {stats.map((stat, idx) => (
-                            <div key={idx} className="text-center">
+                        {stats.length > 0 ? stats.map((stat, idx) => (
+                            <div key={stat.id || idx} className="text-center">
                                 <p className="text-5xl font-black text-[#00B8D4] mb-2">{stat.value}</p>
                                 <p className="text-lg font-bold text-[#212121] mb-1">{stat.label}</p>
-                                <p className="text-[10px] text-[#757575] font-bold uppercase tracking-widest">{stat.sub}</p>
+                                {stat.sub && <p className="text-[10px] text-[#757575] font-bold uppercase tracking-widest">{stat.sub}</p>}
                             </div>
-                        ))}
+                        )) : (
+                            <div className="col-span-full text-center py-8 text-[#9E9E9E]">
+                                <p>Chargement des statistiques...</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </section>
@@ -583,7 +610,7 @@ export default function Home() {
             {/* Testimonials Section */}
             <section className="py-24 bg-white">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <TestimonialsSlider />
+                    <TestimonialsSlider testimonials={testimonials} />
                 </div>
             </section>
 
@@ -598,9 +625,9 @@ export default function Home() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-                        {blogPosts.map((post, idx) => (
+                        {blogPosts.length > 0 ? blogPosts.map((post, idx) => (
                             <motion.article
-                                key={idx}
+                                key={post.id}
                                 initial={{ opacity: 0, y: 20 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
@@ -608,18 +635,28 @@ export default function Home() {
                                 className="group flex flex-col bg-white rounded-3xl overflow-hidden border border-[#F1F5F9] shadow-sm hover:shadow-xl smooth-animation"
                             >
                                 <div className="aspect-video overflow-hidden">
-                                    <img src={post.image} alt={post.title} className="w-full h-full object-cover group-hover:scale-110 smooth-animation" />
+                                    <img
+                                        src={post.image || 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&q=80&w=800'}
+                                        alt={post.title}
+                                        className="w-full h-full object-cover group-hover:scale-110 smooth-animation"
+                                    />
                                 </div>
                                 <div className="p-8 flex-1 flex flex-col">
-                                    <p className="text-[10px] font-bold text-[#757575] mb-3 uppercase tracking-widest">{post.date}</p>
+                                    <p className="text-[10px] font-bold text-[#757575] mb-3 uppercase tracking-widest">
+                                        {formatDate(post.published_at)}
+                                    </p>
                                     <h3 className="text-lg font-bold text-[#212121] mb-4 leading-tight group-hover:text-[#00B8D4] smooth-animation">{post.title}</h3>
                                     <p className="text-xs text-[#616161] mb-6 line-clamp-2">{post.excerpt}</p>
-                                    <Link to={`/blog/${post.id}`} className="mt-auto inline-flex items-center text-xs font-bold text-[#00B8D4] group/btn">
+                                    <Link to={`/blog/${post.slug}`} className="mt-auto inline-flex items-center text-xs font-bold text-[#00B8D4] group/btn">
                                         Lire la suite <ArrowRight className="ml-2 w-4 h-4 group-hover/btn:translate-x-1 smooth-animation" />
                                     </Link>
                                 </div>
                             </motion.article>
-                        ))}
+                        )) : (
+                            <div className="col-span-full text-center py-8 text-[#9E9E9E]">
+                                <p>Chargement des articles...</p>
+                            </div>
+                        )}
                     </div>
 
                     <div className="text-center mt-12">

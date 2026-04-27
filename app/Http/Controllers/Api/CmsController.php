@@ -49,22 +49,53 @@ class CmsController extends Controller
 
     public function getServicesData()
     {
+        $sections = PageSection::forPage('services')->get()->keyBy('section_key');
+
+        // Extract process steps from page section (JSON content)
+        $processSteps = [];
+        if (isset($sections['process_steps']) && $sections['process_steps']->content) {
+            $processSteps = is_array($sections['process_steps']->content)
+                ? $sections['process_steps']->content
+                : json_decode($sections['process_steps']->content, true) ?? [];
+        }
+
         return response()->json([
             'hero_slides' => HeroSlide::forPage('services')->get(),
-            'sections' => PageSection::forPage('services')->get()->keyBy('section_key'),
+            'sections' => $sections,
             'services' => Service::where('is_active', true)->orderBy('order')->get(),
             'stats' => Stat::where('group', 'services')->orderBy('order')->get(),
+            'process_steps' => $processSteps,
         ]);
     }
 
     public function getProjectsData()
     {
+        // Get unique regions (locations) from published projects
+        $regions = Project::where('is_published', true)
+            ->whereNotNull('location')
+            ->where('location', '!=', '')
+            ->distinct()
+            ->pluck('location')
+            ->sort()
+            ->values();
+
+        // Get unique years from published projects
+        $years = Project::where('is_published', true)
+            ->whereNotNull('year')
+            ->where('year', '!=', '')
+            ->distinct()
+            ->pluck('year')
+            ->sortDesc()
+            ->values();
+
         return response()->json([
             'hero_slides' => HeroSlide::forPage('projects')->get(),
             'sections' => PageSection::forPage('projects')->get()->keyBy('section_key'),
             'categories' => Category::where('type', 'project')->withCount(['projects' => function ($q) {
                 $q->where('is_published', true);
             }])->get(),
+            'regions' => $regions,
+            'years' => $years,
         ]);
     }
 
@@ -76,6 +107,11 @@ class CmsController extends Controller
             'categories' => Category::where('type', 'article')->withCount(['articles' => function ($q) {
                 $q->where('is_published', true);
             }])->get(),
+            'recent_articles' => Article::where('is_published', true)
+                ->orderBy('published_at', 'desc')
+                ->with(['category', 'author'])
+                ->take(5)
+                ->get(),
         ]);
     }
 

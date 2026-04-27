@@ -39,7 +39,19 @@ export default function Contact() {
         is_active: boolean;
         order: number;
     };
+    type SocialLink = {
+        id: number;
+        platform: string;
+        url: string;
+        icon?: string;
+    };
     const [offices, setOffices] = useState<Office[]>([]);
+    const [contactPhone, setContactPhone] = useState("+224 620 00 00 00");
+    const [contactEmail, setContactEmail] = useState("contact@mac-construction.com");
+    const [contactAddress, setContactAddress] = useState("Avenue Cheikh Anta Diop\nDakar, Sénégal");
+    const [openingHours, setOpeningHours] = useState("Lundi - Vendredi : 8h00 - 17h00\nSamedi : 8h00 - 12h00\nDimanche : Fermé");
+    const [mapEmbed, setMapEmbed] = useState("https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15437.13521665427!2d-17.4727!3d14.6937!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTTCsDQxJzM3LjMiTiAxN8KwMjgnMjEuNyJX!5e0!3m2!1sfr!2ssn!4v1234567890123");
+    const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -67,12 +79,59 @@ export default function Contact() {
                     ? (res.data.offices as Office[])
                     : [];
                 setOffices(apiOffices);
+
+                // Load contact info and settings
+                const settingsRes = await axios.get("/api/cms/global");
+                const settings = settingsRes.data?.settings;
+                if (settings) {
+                    const contactGroup = settings.contact || [];
+                    const generalGroup = settings.general || [];
+
+                    const phone = contactGroup.find((s: any) => s.key === 'main_phone')?.value;
+                    const email = contactGroup.find((s: any) => s.key === 'main_email')?.value;
+                    const address = contactGroup.find((s: any) => s.key === 'main_address')?.value;
+                    const hours = contactGroup.find((s: any) => s.key === 'opening_hours')?.value;
+                    const mapUrl = contactGroup.find((s: any) => s.key === 'map_embed_url')?.value;
+
+                    if (phone) setContactPhone(String(phone));
+                    if (email) setContactEmail(String(email));
+                    if (address) setContactAddress(String(address));
+                    if (hours) {
+                        // Try to parse as JSON, if it fails, use as plain text
+                        try {
+                            const parsed = JSON.parse(String(hours));
+                            const formatted = Object.entries(parsed)
+                                .map(([day, time]) => `${day} : ${time}`)
+                                .join('\n');
+                            setOpeningHours(formatted);
+                        } catch {
+                            setOpeningHours(String(hours));
+                        }
+                    }
+                    if (mapUrl) setMapEmbed(String(mapUrl));
+                }
+
+                // Load social links from same response
+                if (Array.isArray(settingsRes.data?.social_links)) {
+                    setSocialLinks(settingsRes.data.social_links);
+                }
             } catch {
                 return;
             }
         };
         load();
     }, []);
+
+    const getSocialIcon = (platform: string) => {
+        const platformLower = platform?.toLowerCase() || '';
+        const icons: Record<string, JSX.Element> = {
+            facebook: <Facebook className="w-5 h-5" />,
+            linkedin: <Linkedin className="w-5 h-5" />,
+            twitter: <Twitter className="w-5 h-5" />,
+            instagram: <Instagram className="w-5 h-5" />,
+        };
+        return icons[platformLower] || <Facebook className="w-5 h-5" />;
+    };
 
     const [formData, setFormData] = useState({
         name: "",
@@ -167,7 +226,7 @@ export default function Contact() {
                                     </div>
                                     <div>
                                         <h4 className="text-sm font-black text-[#212121] uppercase tracking-widest mb-1">Siège Social</h4>
-                                        <p className="text-[#616161] text-sm leading-relaxed font-medium">Avenue Cheikh Anta Diop<br />Dakar, Sénégal</p>
+                                        <p className="text-[#616161] text-sm leading-relaxed font-medium whitespace-pre-line">{contactAddress}</p>
                                     </div>
                                 </div>
 
@@ -177,7 +236,7 @@ export default function Contact() {
                                     </div>
                                     <div>
                                         <h4 className="text-sm font-black text-[#212121] uppercase tracking-widest mb-1">Téléphone</h4>
-                                        <p className="text-[#616161] text-sm leading-relaxed font-medium">+224 77 123 45 67</p>
+                                        <p className="text-[#616161] text-sm leading-relaxed font-medium">{contactPhone}</p>
                                     </div>
                                 </div>
 
@@ -187,7 +246,7 @@ export default function Contact() {
                                     </div>
                                     <div>
                                         <h4 className="text-sm font-black text-[#212121] uppercase tracking-widest mb-1">Email</h4>
-                                        <p className="text-[#616161] text-sm leading-relaxed font-medium">contact@mac-construction.com</p>
+                                        <p className="text-[#616161] text-sm leading-relaxed font-medium">{contactEmail}</p>
                                     </div>
                                 </div>
 
@@ -197,7 +256,7 @@ export default function Contact() {
                                     </div>
                                     <div>
                                         <h4 className="text-sm font-black text-[#212121] uppercase tracking-widest mb-1">Horaires d'Ouverture</h4>
-                                        <p className="text-[#616161] text-sm leading-relaxed font-medium">Lundi - Vendredi : 8h00 - 17h00<br />Samedi : 8h00 - 12h00<br />Dimanche : Fermé</p>
+                                        <p className="text-[#616161] text-sm leading-relaxed font-medium whitespace-pre-line">{openingHours}</p>
                                     </div>
                                 </div>
                             </div>
@@ -206,10 +265,24 @@ export default function Contact() {
                         <div>
                             <h4 className="text-xs font-black text-[#212121] uppercase tracking-widest mb-6">Suivez-nous</h4>
                             <div className="flex gap-4">
-                                <a href="#" className="w-10 h-10 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-center text-[#616161] hover:bg-[#00B8D4] hover:text-white hover:border-[#00B8D4] smooth-animation"><Facebook className="w-5 h-5" /></a>
-                                <a href="#" className="w-10 h-10 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-center text-[#616161] hover:bg-[#00B8D4] hover:text-white hover:border-[#00B8D4] smooth-animation"><Linkedin className="w-5 h-5" /></a>
-                                <a href="#" className="w-10 h-10 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-center text-[#616161] hover:bg-[#00B8D4] hover:text-white hover:border-[#00B8D4] smooth-animation"><Twitter className="w-5 h-5" /></a>
-                                <a href="#" className="w-10 h-10 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-center text-[#616161] hover:bg-[#00B8D4] hover:text-white hover:border-[#00B8D4] smooth-animation"><Instagram className="w-5 h-5" /></a>
+                                {socialLinks.length > 0 ? socialLinks.map((social) => (
+                                    <a
+                                        key={social.id}
+                                        href={social.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-10 h-10 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-center text-[#616161] hover:bg-[#00B8D4] hover:text-white hover:border-[#00B8D4] smooth-animation"
+                                    >
+                                        {getSocialIcon(social.platform)}
+                                    </a>
+                                )) : (
+                                    <>
+                                        <a href="#" className="w-10 h-10 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-center text-[#616161] hover:bg-[#00B8D4] hover:text-white hover:border-[#00B8D4] smooth-animation"><Facebook className="w-5 h-5" /></a>
+                                        <a href="#" className="w-10 h-10 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-center text-[#616161] hover:bg-[#00B8D4] hover:text-white hover:border-[#00B8D4] smooth-animation"><Linkedin className="w-5 h-5" /></a>
+                                        <a href="#" className="w-10 h-10 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-center text-[#616161] hover:bg-[#00B8D4] hover:text-white hover:border-[#00B8D4] smooth-animation"><Twitter className="w-5 h-5" /></a>
+                                        <a href="#" className="w-10 h-10 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-center text-[#616161] hover:bg-[#00B8D4] hover:text-white hover:border-[#00B8D4] smooth-animation"><Instagram className="w-5 h-5" /></a>
+                                    </>
+                                )}
                             </div>
                         </div>
 
@@ -218,7 +291,7 @@ export default function Contact() {
                             <h4 className="text-sm font-black text-[#212121] uppercase tracking-widest">Notre Localisation</h4>
                             <div className="relative aspect-video rounded-3xl overflow-hidden border border-[#E2E8F0] shadow-sm">
                                 <iframe
-                                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15437.13521665427!2d-17.4727!3d14.6937!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTTCsDQxJzM3LjMiTiAxN8KwMjgnMjEuNyJX!5e0!3m2!1sfr!2ssn!4v1234567890123"
+                                    src={mapEmbed}
                                     className="w-full h-full border-0"
                                     loading="lazy"
                                 ></iframe>
@@ -264,7 +337,7 @@ export default function Contact() {
                                         <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1">Téléphone *</label>
                                         <input
                                             type="tel"
-                                            placeholder="+224 XX XXX XX XX"
+                                            placeholder="+224 XXX XXX XXX"
                                             required
                                             className="w-full px-6 py-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl focus:ring-2 focus:ring-[#00B8D4] focus:border-transparent smooth-animation text-sm outline-none font-medium"
                                             value={formData.phone}

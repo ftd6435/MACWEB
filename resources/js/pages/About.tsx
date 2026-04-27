@@ -40,6 +40,36 @@ export default function About() {
         description: string;
     };
 
+    type TimelineItem = {
+        id?: number;
+        year: string;
+        title: string;
+        description: string;
+        icon?: string;
+        order?: number;
+    };
+
+    type TeamMemberItem = {
+        id?: number;
+        name: string;
+        role: string;
+        bio: string;
+        image: string | null;
+        linkedin?: string | null;
+        email?: string | null;
+        is_active?: boolean;
+        order?: number;
+    };
+
+    type StatItem = {
+        id?: number;
+        label: string;
+        value: string;
+        sub?: string;
+        icon?: string;
+        order?: number;
+    };
+
     const defaultHero = {
         image: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=2000",
         title: "À Propos de MAC",
@@ -109,6 +139,10 @@ export default function About() {
     const [mission, setMission] = React.useState(defaultMission);
     const [valuesIntro, setValuesIntro] = React.useState(defaultValuesIntro);
     const [values, setValues] = React.useState<ValueItem[]>(defaultValues);
+    const [timeline, setTimeline] = React.useState<TimelineItem[]>([]);
+    const [team, setTeam] = React.useState<TeamMemberItem[]>([]);
+    const [stats, setStats] = React.useState<StatItem[]>([]);
+    const [teamSizeNote, setTeamSizeNote] = React.useState("Notre équipe compte 150+ professionnels répartis dans nos différents départements : ingénierie, architecture, gestion de projets, qualité et développement durable.");
 
     React.useEffect(() => {
         const load = async () => {
@@ -190,6 +224,28 @@ export default function About() {
                         );
                     if (mapped.length > 0) setValues(mapped);
                 }
+
+                // Timeline
+                if (Array.isArray(res.data?.timeline)) {
+                    setTimeline(res.data.timeline);
+                }
+
+                // Team Members
+                if (Array.isArray(res.data?.team)) {
+                    setTeam(res.data.team);
+                }
+
+                // Statistics
+                if (Array.isArray(res.data?.stats)) {
+                    setStats(res.data.stats);
+                }
+
+                // Load team size note from global settings
+                const globalRes = await axios.get("/api/cms/global");
+                const settings = globalRes.data?.settings;
+                const generalGroup = settings?.general || [];
+                const teamNote = generalGroup.find((s: any) => s.key === 'team_size_note')?.value;
+                if (teamNote) setTeamSizeNote(String(teamNote));
             } catch {
                 return;
             }
@@ -197,62 +253,20 @@ export default function About() {
         load();
     }, []);
 
-    const timeline = [
-        {
-            year: "2009",
-            title: "Création de MAC",
-            description: "Fondation de l'entreprise avec une vision forte : révolutionner la construction en Afrique.",
-            icon: <Building2 className="w-5 h-5" />,
-        },
-        {
-            year: "2013",
-            title: "Expansion Régionale",
-            description: "Extension de nos activités dans 5 pays d'Afrique de l'Ouest avec plus de 50 projets réalisés.",
-            icon: <TrendingUp className="w-5 h-5" />,
-        },
-        {
-            year: "2024",
-            title: "Leader Reconnu",
-            description: "Plus de 200 projets livrés avec une reconnaissance internationale de l'innovation et de la qualité.",
-            icon: <Award className="w-5 h-5" />,
-        },
-    ];
+    // Icon mapping for timeline
+    const timelineIconMap: Record<string, JSX.Element> = {
+        Building2: <Building2 className="w-5 h-5" />,
+        TrendingUp: <TrendingUp className="w-5 h-5" />,
+        Award: <Award className="w-5 h-5" />,
+        Users: <Users className="w-5 h-5" />,
+        Globe: <Globe className="w-5 h-5" />,
+        Briefcase: <Briefcase className="w-5 h-5" />,
+    };
 
-    const team = [
-        {
-            name: "Mamadou Diop",
-            role: "Directeur Général",
-            bio: "Ingénieur civil avec 20 ans d'expérience dans la construction en Afrique.",
-            image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300",
-        },
-        {
-            name: "Aminata Kone",
-            role: "Directrice Architecture",
-            bio: "Architecte diplômée spécialisée en architecture contemporaine africaine.",
-            image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=300",
-        },
-        {
-            name: "Ibrahim Traoré",
-            role: "Chef de Projets",
-            bio: "Expert en gestion de projets complexes et coordination d'équipes.",
-            image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300",
-        },
-        {
-            name: "Fatoumata Sy",
-            role: "Directrice Qualité",
-            bio: "Ingénieure qualité garante des normes et standards d'excellence.",
-            image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=300",
-        },
-    ];
-
-    const stats = [
-        { value: "15+", label: "Années d'Expérience", sub: "Au service de l'excellence" },
-        { value: "200+", label: "Projets Livrés", sub: "Réalisations de qualité" },
-        { value: "98%", label: "Clients Satisfaits", sub: "Taux de satisfaction" },
-        { value: "150+", label: "Employés", sub: "Experts qualifiés" },
-        { value: "8", label: "Pays d'Intervention", sub: "Présence régionale" },
-        { value: "95%", label: "Respect des Délais", sub: "Livraison à temps" },
-    ];
+    const getTimelineIcon = (iconName: string | null | undefined) => {
+        if (!iconName) return <Building2 className="w-5 h-5" />;
+        return timelineIconMap[iconName] || <Building2 className="w-5 h-5" />;
+    };
 
     return (
         <div className="bg-white">
@@ -294,9 +308,9 @@ export default function About() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-24">
-                    {timeline.map((item, idx) => (
+                    {timeline.length > 0 ? timeline.map((item, idx) => (
                         <motion.div
-                            key={idx}
+                            key={item.id || idx}
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
@@ -305,14 +319,18 @@ export default function About() {
                         >
                             <div className="flex flex-col items-center text-center">
                                 <div className="w-16 h-16 rounded-2xl bg-[#00B8D4]/10 text-[#00B8D4] flex items-center justify-center mb-6 group-hover:bg-[#00B8D4] group-hover:text-white smooth-animation">
-                                    {item.icon}
+                                    {getTimelineIcon(item.icon)}
                                 </div>
                                 <span className="text-2xl font-black text-[#00B8D4] mb-2">{item.year}</span>
                                 <h3 className="text-xl font-black text-[#212121] mb-3">{item.title}</h3>
                                 <p className="text-[#616161] text-sm leading-relaxed">{item.description}</p>
                             </div>
                         </motion.div>
-                    ))}
+                    )) : (
+                        <div className="col-span-full text-center py-8 text-[#9E9E9E]">
+                            <p>Chargement de l'historique...</p>
+                        </div>
+                    )}
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
@@ -395,9 +413,9 @@ export default function About() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-20">
-                    {team.map((member, idx) => (
+                    {team.length > 0 ? team.map((member, idx) => (
                         <motion.div
-                            key={idx}
+                            key={member.id || idx}
                             initial={{ opacity: 0, scale: 0.9 }}
                             whileInView={{ opacity: 1, scale: 1 }}
                             viewport={{ once: true }}
@@ -406,7 +424,7 @@ export default function About() {
                         >
                             <div className="relative mb-6 mx-auto w-48 h-48">
                                 <img
-                                    src={member.image}
+                                    src={member.image || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300'}
                                     alt={member.name}
                                     className="w-full h-full object-cover rounded-[2.5rem] shadow-lg group-hover:scale-105 smooth-animation"
                                 />
@@ -416,11 +434,15 @@ export default function About() {
                             <p className="text-[#00B8D4] text-xs font-black uppercase tracking-widest mb-3">{member.role}</p>
                             <p className="text-[#616161] text-xs leading-relaxed px-4">{member.bio}</p>
                         </motion.div>
-                    ))}
+                    )) : (
+                        <div className="col-span-full text-center py-8 text-[#9E9E9E]">
+                            <p>Chargement de l'équipe...</p>
+                        </div>
+                    )}
                 </div>
 
                 <div className="bg-[#00B8D4] rounded-[2.5rem] p-8 text-center text-white">
-                    <p className="text-lg font-black">Notre équipe compte <span className="text-2xl">150+ professionnels</span> répartis dans nos différents départements : ingénierie, architecture, gestion de projets, qualité et développement durable.</p>
+                    <p className="text-lg font-black">{teamSizeNote}</p>
                 </div>
             </section>
 
@@ -432,9 +454,9 @@ export default function About() {
                 </div>
 
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-12">
-                    {stats.map((stat, idx) => (
+                    {stats.length > 0 ? stats.map((stat, idx) => (
                         <motion.div
-                            key={idx}
+                            key={stat.id || idx}
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
@@ -442,9 +464,13 @@ export default function About() {
                         >
                             <span className="text-4xl md:text-5xl font-black text-[#00B8D4] block mb-2">{stat.value}</span>
                             <h4 className="text-lg font-black text-[#212121] mb-1">{stat.label}</h4>
-                            <p className="text-[#9E9E9E] text-xs font-bold">{stat.sub}</p>
+                            {stat.sub && <p className="text-[#9E9E9E] text-xs font-bold">{stat.sub}</p>}
                         </motion.div>
-                    ))}
+                    )) : (
+                        <div className="col-span-full text-center py-8 text-[#9E9E9E]">
+                            <p>Chargement des statistiques...</p>
+                        </div>
+                    )}
                 </div>
             </section>
 

@@ -16,7 +16,7 @@ class CommentsController extends Controller
 
         if ($type && $id) {
             $query->where('commentable_type', "App\\Models\\{$type}")
-                  ->where('commentable_id', $id);
+                ->where('commentable_id', $id);
         }
 
         $comments = $query->orderBy('created_at', 'desc')->paginate(20);
@@ -33,6 +33,9 @@ class CommentsController extends Controller
             'commentable_type' => 'required|string',
             'commentable_id' => 'required|integer',
         ]);
+
+        // Approve comments by default; admins can disapprove later if needed
+        $validated['approved'] = true;
 
         $comment = Comment::create($validated);
 

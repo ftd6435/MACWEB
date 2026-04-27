@@ -30,6 +30,12 @@ import {
     Lightbulb,
     Heart,
     Users,
+    Calendar,
+    Clock,
+    Navigation,
+    FileText,
+    Briefcase,
+    ChevronDown,
 } from "lucide-react";
 import axios from "axios";
 import ImageUploader from "../../components/ImageUploader";
@@ -74,6 +80,12 @@ type AboutValue = {
 
 export default function AdminSettings() {
     const [activeTab, setActiveTab] = useState("general");
+    const [openAccordions, setOpenAccordions] = useState<string[]>([
+        "general_info",
+        "contact_info",
+        "gps_coords",
+        "content_texts",
+    ]);
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isAboutSaving, setIsAboutSaving] = useState(false);
@@ -187,6 +199,27 @@ export default function AdminSettings() {
             contact_email: "contact@mac-construction.com",
             contact_phone: "+221 33 800 00 00",
             address: "Dakar, Sénégal",
+            company_short_name: "MAC",
+            founded_year: "2009",
+            hr_email: "rh@mac-construction.com",
+            opening_hours: {
+                "Lun - Ven": "8:00 - 17:00",
+                "Samedi": "8:00 - 12:00",
+                "Dimanche": "Fermé"
+            },
+            response_time: "24 heures",
+            map_lat: "",
+            map_lng: "",
+            footer_description: "Leader de la construction moderne en Afrique",
+            copyright_text: "© {year} MAC Construction. Tous droits réservés.",
+            work_process: [
+                {number: "1", title: "Consultation Initiale", description: "Analyse de vos besoins et définition des objectifs du projet."},
+                {number: "2", title: "Étude et Devis", description: "Conception technique détaillée avec devis transparent et planifié."},
+                {number: "3", title: "Planification", description: "Organisation des ressources, obtention des autorisations et calendrier."},
+                {number: "4", title: "Exécution", description: "Réalisation avec contrôle qualité continu et communication régulière."},
+                {number: "5", title: "Livraison et Suivi", description: "Réception finale avec garanties et suivi de maintenance."}
+            ],
+            team_size_note: "Plus de 500 professionnels qualifiés",
         },
         social: {
             facebook: "https://facebook.com/mac",
@@ -264,7 +297,7 @@ export default function AdminSettings() {
                             keyMap.company_name ??
                             prev.general.site_name,
                         site_description:
-                            keyMap.tagline ??
+                            keyMap.company_tagline ??
                             prev.general.site_description,
                         contact_email:
                             keyMap.main_email ??
@@ -275,6 +308,37 @@ export default function AdminSettings() {
                         address:
                             keyMap.main_address ??
                             prev.general.address,
+                        company_short_name:
+                            keyMap.company_short_name ??
+                            prev.general.company_short_name,
+                        founded_year:
+                            keyMap.founded_year ??
+                            prev.general.founded_year,
+                        hr_email:
+                            keyMap.hr_email ??
+                            prev.general.hr_email,
+                        opening_hours:
+                            keyMap.opening_hours ? (typeof keyMap.opening_hours === 'string' ? JSON.parse(keyMap.opening_hours) : keyMap.opening_hours) : prev.general.opening_hours,
+                        response_time:
+                            keyMap.response_time ??
+                            prev.general.response_time,
+                        map_lat:
+                            keyMap.map_lat ??
+                            prev.general.map_lat,
+                        map_lng:
+                            keyMap.map_lng ??
+                            prev.general.map_lng,
+                        footer_description:
+                            keyMap.footer_description ??
+                            prev.general.footer_description,
+                        copyright_text:
+                            keyMap.copyright_text ??
+                            prev.general.copyright_text,
+                        work_process:
+                            keyMap.work_process ? (typeof keyMap.work_process === 'string' ? JSON.parse(keyMap.work_process) : keyMap.work_process) : prev.general.work_process,
+                        team_size_note:
+                            keyMap.team_size_note ??
+                            prev.general.team_size_note,
                     },
                     social: {
                         ...prev.social,
@@ -646,10 +710,21 @@ export default function AdminSettings() {
 
             await axios.put("/api/admin/settings", {
                 company_name: settings.general.site_name,
-                tagline: settings.general.site_description,
+                company_tagline: settings.general.site_description,
                 main_email: settings.general.contact_email,
                 main_phone: settings.general.contact_phone,
                 main_address: settings.general.address,
+                company_short_name: settings.general.company_short_name,
+                founded_year: settings.general.founded_year,
+                hr_email: settings.general.hr_email,
+                opening_hours: typeof settings.general.opening_hours === 'object' ? JSON.stringify(settings.general.opening_hours) : settings.general.opening_hours,
+                response_time: settings.general.response_time,
+                map_lat: settings.general.map_lat,
+                map_lng: settings.general.map_lng,
+                footer_description: settings.general.footer_description,
+                copyright_text: settings.general.copyright_text,
+                work_process: typeof settings.general.work_process === 'object' ? JSON.stringify(settings.general.work_process) : settings.general.work_process,
+                team_size_note: settings.general.team_size_note,
                 header_logo: settings.appearance.logo_dark,
                 footer_logo: settings.appearance.logo_light,
             });
@@ -733,6 +808,14 @@ export default function AdminSettings() {
         },
     ];
 
+    const toggleAccordion = (id: string) => {
+        setOpenAccordions((prev) =>
+            prev.includes(id)
+                ? prev.filter((item) => item !== id)
+                : [...prev, id]
+        );
+    };
+
     return (
         <div className="space-y-10 pb-20">
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -795,122 +878,676 @@ export default function AdminSettings() {
                         className="bg-white rounded-[3rem] border border-[#F1F5F9] shadow-sm p-12"
                     >
                         {activeTab === "general" && (
-                            <div className="space-y-10">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
-                                            <Globe className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
-                                            Nom du Site
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={settings.general.site_name}
-                                            onChange={(e) =>
-                                                setSettings({
-                                                    ...settings,
-                                                    general: {
-                                                        ...settings.general,
-                                                        site_name:
-                                                            e.target.value,
-                                                    },
-                                                })
-                                            }
-                                            className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
+                            <div className="space-y-6">
+                                {/* Informations Générales Accordion */}
+                                <div className="border border-gray-200 rounded-2xl overflow-hidden">
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleAccordion("general_info")}
+                                        className="w-full flex items-center justify-between p-6 bg-white hover:bg-gray-50 smooth-animation"
+                                    >
+                                        <h3 className="text-lg font-black text-[#212121] flex items-center">
+                                            <Globe className="w-5 h-5 mr-3 text-[#00B8D4]" />
+                                            Informations Générales
+                                        </h3>
+                                        <ChevronDown
+                                            className={`w-5 h-5 text-[#00B8D4] smooth-animation ${
+                                                openAccordions.includes("general_info") ? "rotate-180" : ""
+                                            }`}
                                         />
+                                    </button>
+                                    <AnimatePresence>
+                                        {openAccordions.includes("general_info") && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: "auto", opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.3 }}
+                                                className="overflow-hidden"
+                                            >
+                                                <div className="p-6 pt-0 space-y-10 bg-white">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
+                                                <Globe className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
+                                                Nom du Site
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={settings.general.site_name}
+                                                onChange={(e) =>
+                                                    setSettings({
+                                                        ...settings,
+                                                        general: {
+                                                            ...settings.general,
+                                                            site_name:
+                                                                e.target.value,
+                                                        },
+                                                    })
+                                                }
+                                                className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
+                                                <FileText className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
+                                                Nom Court
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={settings.general.company_short_name}
+                                                onChange={(e) =>
+                                                    setSettings({
+                                                        ...settings,
+                                                        general: {
+                                                            ...settings.general,
+                                                            company_short_name: e.target.value,
+                                                        },
+                                                    })
+                                                }
+                                                placeholder="MAC"
+                                                className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="space-y-2">
+
+                                    <div className="space-y-2 mt-10">
                                         <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
-                                            <Mail className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
-                                            Email de Contact
+                                            <Layout className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
+                                            Tagline / Slogan
                                         </label>
-                                        <input
-                                            type="email"
+                                        <textarea
+                                            rows={3}
                                             value={
-                                                settings.general.contact_email
+                                                settings.general.site_description
                                             }
                                             onChange={(e) =>
                                                 setSettings({
                                                     ...settings,
                                                     general: {
                                                         ...settings.general,
-                                                        contact_email:
+                                                        site_description:
                                                             e.target.value,
                                                     },
                                                 })
                                             }
-                                            className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
+                                            className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation resize-none"
                                         />
                                     </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mt-10">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
+                                                <Calendar className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
+                                                Année de Fondation
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={settings.general.founded_year}
+                                                onChange={(e) =>
+                                                    setSettings({
+                                                        ...settings,
+                                                        general: {
+                                                            ...settings.general,
+                                                            founded_year: e.target.value,
+                                                        },
+                                                    })
+                                                }
+                                                placeholder="2009"
+                                                className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
+                                                <Users className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
+                                                Taille de l'Équipe
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={settings.general.team_size_note}
+                                                onChange={(e) =>
+                                                    setSettings({
+                                                        ...settings,
+                                                        general: {
+                                                            ...settings.general,
+                                                            team_size_note: e.target.value,
+                                                        },
+                                                    })
+                                                }
+                                                placeholder="Plus de 500 professionnels qualifiés"
+                                                className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
+                                            />
+                                        </div>
+                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
-                                        <Layout className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
-                                        Description du Site (SEO)
-                                    </label>
-                                    <textarea
-                                        rows={4}
-                                        value={
-                                            settings.general.site_description
-                                        }
-                                        onChange={(e) =>
-                                            setSettings({
-                                                ...settings,
-                                                general: {
-                                                    ...settings.general,
-                                                    site_description:
-                                                        e.target.value,
-                                                },
-                                            })
-                                        }
-                                        className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation resize-none"
-                                    />
+                                {/* Coordonnées de Contact Accordion */}
+                                <div className="border border-gray-200 rounded-2xl overflow-hidden">
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleAccordion("contact_info")}
+                                        className="w-full flex items-center justify-between p-6 bg-white hover:bg-gray-50 smooth-animation"
+                                    >
+                                        <h3 className="text-lg font-black text-[#212121] flex items-center">
+                                            <Mail className="w-5 h-5 mr-3 text-[#00B8D4]" />
+                                            Coordonnées de Contact
+                                        </h3>
+                                        <ChevronDown
+                                            className={`w-5 h-5 text-[#00B8D4] smooth-animation ${
+                                                openAccordions.includes("contact_info") ? "rotate-180" : ""
+                                            }`}
+                                        />
+                                    </button>
+                                    <AnimatePresence>
+                                        {openAccordions.includes("contact_info") && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: "auto", opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.3 }}
+                                                className="overflow-hidden"
+                                            >
+                                                <div className="p-6 pt-0 space-y-10 bg-white">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
+                                                <Mail className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
+                                                Email Principal
+                                            </label>
+                                            <input
+                                                type="email"
+                                                value={settings.general.contact_email}
+                                                onChange={(e) =>
+                                                    setSettings({
+                                                        ...settings,
+                                                        general: {
+                                                            ...settings.general,
+                                                            contact_email: e.target.value,
+                                                        },
+                                                    })
+                                                }
+                                                className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
+                                                <Mail className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
+                                                Email RH
+                                            </label>
+                                            <input
+                                                type="email"
+                                                value={settings.general.hr_email}
+                                                onChange={(e) =>
+                                                    setSettings({
+                                                        ...settings,
+                                                        general: {
+                                                            ...settings.general,
+                                                            hr_email: e.target.value,
+                                                        },
+                                                    })
+                                                }
+                                                placeholder="rh@mac-construction.com"
+                                                className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
+                                                <Phone className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
+                                                Téléphone
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={settings.general.contact_phone}
+                                                onChange={(e) =>
+                                                    setSettings({
+                                                        ...settings,
+                                                        general: {
+                                                            ...settings.general,
+                                                            contact_phone: e.target.value,
+                                                        },
+                                                    })
+                                                }
+                                                className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
+                                                <MapPin className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
+                                                Adresse Physique
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={settings.general.address}
+                                                onChange={(e) =>
+                                                    setSettings({
+                                                        ...settings,
+                                                        general: {
+                                                            ...settings.general,
+                                                            address: e.target.value,
+                                                        },
+                                                    })
+                                                }
+                                                className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2 mt-10">
+                                        <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
+                                            <Clock className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
+                                            Horaires d'Ouverture
+                                        </label>
+                                        <div className="space-y-4 p-6 bg-[#F8FAFC] rounded-2xl">
+                                            {Object.entries(settings.general.opening_hours).map(([day, hours]) => (
+                                                <div key={day} className="grid grid-cols-2 gap-4 items-center">
+                                                    <input
+                                                        type="text"
+                                                        value={day}
+                                                        onChange={(e) => {
+                                                            const newHours = {...settings.general.opening_hours};
+                                                            const oldValue = newHours[day];
+                                                            delete newHours[day];
+                                                            newHours[e.target.value] = oldValue;
+                                                            setSettings({
+                                                                ...settings,
+                                                                general: {
+                                                                    ...settings.general,
+                                                                    opening_hours: newHours,
+                                                                },
+                                                            });
+                                                        }}
+                                                        placeholder="Lun - Ven"
+                                                        className="px-4 py-2 bg-white border-none rounded-xl focus:ring-2 focus:ring-[#00B8D4]/20 outline-none text-sm font-bold text-[#212121] smooth-animation"
+                                                    />
+                                                    <div className="flex gap-2">
+                                                        <input
+                                                            type="text"
+                                                            value={hours as string}
+                                                            onChange={(e) =>
+                                                                setSettings({
+                                                                    ...settings,
+                                                                    general: {
+                                                                        ...settings.general,
+                                                                        opening_hours: {
+                                                                            ...settings.general.opening_hours,
+                                                                            [day]: e.target.value,
+                                                                        },
+                                                                    },
+                                                                })
+                                                            }
+                                                            placeholder="8:00 - 17:00"
+                                                            className="flex-1 px-4 py-2 bg-white border-none rounded-xl focus:ring-2 focus:ring-[#00B8D4]/20 outline-none text-sm font-bold text-[#212121] smooth-animation"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const newHours = {...settings.general.opening_hours};
+                                                                delete newHours[day];
+                                                                setSettings({
+                                                                    ...settings,
+                                                                    general: {
+                                                                        ...settings.general,
+                                                                        opening_hours: newHours,
+                                                                    },
+                                                                });
+                                                            }}
+                                                            className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl smooth-animation"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setSettings({
+                                                        ...settings,
+                                                        general: {
+                                                            ...settings.general,
+                                                            opening_hours: {
+                                                                ...settings.general.opening_hours,
+                                                                "Nouveau": "8:00 - 17:00",
+                                                            },
+                                                        },
+                                                    });
+                                                }}
+                                                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white hover:bg-[#00B8D4]/5 text-[#00B8D4] rounded-xl smooth-animation font-bold text-sm"
+                                            >
+                                                <Plus className="w-4 h-4" />
+                                                Ajouter une plage horaire
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mt-10">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
+                                                <Clock className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
+                                                Temps de Réponse
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={settings.general.response_time}
+                                                onChange={(e) =>
+                                                    setSettings({
+                                                        ...settings,
+                                                        general: {
+                                                            ...settings.general,
+                                                            response_time: e.target.value,
+                                                        },
+                                                    })
+                                                }
+                                                placeholder="24 heures"
+                                                className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
+                                            />
+                                        </div>
+                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
-                                            <Phone className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
-                                            Téléphone
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={
-                                                settings.general.contact_phone
-                                            }
-                                            onChange={(e) =>
-                                                setSettings({
-                                                    ...settings,
-                                                    general: {
-                                                        ...settings.general,
-                                                        contact_phone:
-                                                            e.target.value,
-                                                    },
-                                                })
-                                            }
-                                            className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
+                                {/* Coordonnées GPS Accordion */}
+                                <div className="border border-gray-200 rounded-2xl overflow-hidden">
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleAccordion("gps_coords")}
+                                        className="w-full flex items-center justify-between p-6 bg-white hover:bg-gray-50 smooth-animation"
+                                    >
+                                        <h3 className="text-lg font-black text-[#212121] flex items-center">
+                                            <Navigation className="w-5 h-5 mr-3 text-[#00B8D4]" />
+                                            Coordonnées GPS
+                                        </h3>
+                                        <ChevronDown
+                                            className={`w-5 h-5 text-[#00B8D4] smooth-animation ${
+                                                openAccordions.includes("gps_coords") ? "rotate-180" : ""
+                                            }`}
                                         />
+                                    </button>
+                                    <AnimatePresence>
+                                        {openAccordions.includes("gps_coords") && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: "auto", opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.3 }}
+                                                className="overflow-hidden"
+                                            >
+                                                <div className="p-6 pt-0 bg-white">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
+                                                <MapPin className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
+                                                Latitude
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={settings.general.map_lat}
+                                                onChange={(e) =>
+                                                    setSettings({
+                                                        ...settings,
+                                                        general: {
+                                                            ...settings.general,
+                                                            map_lat: e.target.value,
+                                                        },
+                                                    })
+                                                }
+                                                placeholder="14.6937"
+                                                className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
+                                                <MapPin className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
+                                                Longitude
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={settings.general.map_lng}
+                                                onChange={(e) =>
+                                                    setSettings({
+                                                        ...settings,
+                                                        general: {
+                                                            ...settings.general,
+                                                            map_lng: e.target.value,
+                                                        },
+                                                    })
+                                                }
+                                                placeholder="-17.4727"
+                                                className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
-                                            <MapPin className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
-                                            Adresse Physique
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={settings.general.address}
-                                            onChange={(e) =>
-                                                setSettings({
-                                                    ...settings,
-                                                    general: {
-                                                        ...settings.general,
-                                                        address: e.target.value,
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (navigator.geolocation) {
+                                                navigator.geolocation.getCurrentPosition(
+                                                    (position) => {
+                                                        setSettings({
+                                                            ...settings,
+                                                            general: {
+                                                                ...settings.general,
+                                                                map_lat: position.coords.latitude.toString(),
+                                                                map_lng: position.coords.longitude.toString(),
+                                                            },
+                                                        });
+                                                        toast("Coordonnées GPS obtenues avec succès");
                                                     },
-                                                })
+                                                    (error) => {
+                                                        toast("Impossible d'obtenir la position GPS", "error");
+                                                    }
+                                                );
+                                            } else {
+                                                toast("Géolocalisation non supportée par ce navigateur", "error");
                                             }
-                                            className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
+                                        }}
+                                        className="mt-4 flex items-center px-6 py-3 bg-[#00B8D4] text-white rounded-xl hover:bg-[#0097A7] smooth-animation font-bold text-xs uppercase tracking-widest"
+                                    >
+                                        <Navigation className="w-4 h-4 mr-2" />
+                                        Obtenir Ma Position Actuelle
+                                    </button>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+
+                                {/* Contenu et Textes Accordion */}
+                                <div className="border border-gray-200 rounded-2xl overflow-hidden">
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleAccordion("content_texts")}
+                                        className="w-full flex items-center justify-between p-6 bg-white hover:bg-gray-50 smooth-animation"
+                                    >
+                                        <h3 className="text-lg font-black text-[#212121] flex items-center">
+                                            <FileText className="w-5 h-5 mr-3 text-[#00B8D4]" />
+                                            Contenu et Textes
+                                        </h3>
+                                        <ChevronDown
+                                            className={`w-5 h-5 text-[#00B8D4] smooth-animation ${
+                                                openAccordions.includes("content_texts") ? "rotate-180" : ""
+                                            }`}
                                         />
+                                    </button>
+                                    <AnimatePresence>
+                                        {openAccordions.includes("content_texts") && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: "auto", opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.3 }}
+                                                className="overflow-hidden"
+                                            >
+                                                <div className="p-6 pt-0 bg-white">
+                                    <div className="space-y-10">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
+                                                <FileText className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
+                                                Description Footer
+                                            </label>
+                                            <textarea
+                                                rows={3}
+                                                value={settings.general.footer_description}
+                                                onChange={(e) =>
+                                                    setSettings({
+                                                        ...settings,
+                                                        general: {
+                                                            ...settings.general,
+                                                            footer_description: e.target.value,
+                                                        },
+                                                    })
+                                                }
+                                                placeholder="Leader de la construction moderne en Afrique"
+                                                className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation resize-none"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
+                                                <FileText className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
+                                                Texte Copyright
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={settings.general.copyright_text}
+                                                onChange={(e) =>
+                                                    setSettings({
+                                                        ...settings,
+                                                        general: {
+                                                            ...settings.general,
+                                                            copyright_text: e.target.value,
+                                                        },
+                                                    })
+                                                }
+                                                placeholder="© {year} MAC Construction. Tous droits réservés."
+                                                className="w-full px-6 py-4 bg-[#F8FAFC] border-none rounded-2xl focus:ring-4 focus:ring-[#00B8D4]/10 outline-none text-sm font-bold text-[#212121] smooth-animation"
+                                            />
+                                            <p className="text-xs text-gray-500 ml-1 flex items-center gap-1.5">
+                                                <span className="inline-flex items-center px-2 py-0.5 bg-[#00B8D4]/10 text-[#00B8D4] rounded font-mono text-xs">
+                                                    {"{year}"}
+                                                </span>
+                                                sera automatiquement remplacé par l'année en cours
+                                            </p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-[#212121] uppercase tracking-widest ml-1 flex items-center">
+                                                <Briefcase className="w-3.5 h-3.5 mr-2 text-[#00B8D4]" />{" "}
+                                                Processus de Travail
+                                            </label>
+                                            <div className="space-y-4">
+                                                {settings.general.work_process.map((step: any, index: number) => (
+                                                    <div key={index} className="p-6 bg-[#F8FAFC] rounded-2xl space-y-4">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="flex-shrink-0">
+                                                                <input
+                                                                    type="text"
+                                                                    value={step.number}
+                                                                    onChange={(e) => {
+                                                                        const newProcess = [...settings.general.work_process];
+                                                                        newProcess[index].number = e.target.value;
+                                                                        setSettings({
+                                                                            ...settings,
+                                                                            general: {
+                                                                                ...settings.general,
+                                                                                work_process: newProcess,
+                                                                            },
+                                                                        });
+                                                                    }}
+                                                                    placeholder="1"
+                                                                    className="w-16 px-3 py-2 bg-white border-none rounded-xl text-center focus:ring-2 focus:ring-[#00B8D4]/20 outline-none text-sm font-black text-[#00B8D4]"
+                                                                />
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <input
+                                                                    type="text"
+                                                                    value={step.title}
+                                                                    onChange={(e) => {
+                                                                        const newProcess = [...settings.general.work_process];
+                                                                        newProcess[index].title = e.target.value;
+                                                                        setSettings({
+                                                                            ...settings,
+                                                                            general: {
+                                                                                ...settings.general,
+                                                                                work_process: newProcess,
+                                                                            },
+                                                                        });
+                                                                    }}
+                                                                    placeholder="Titre de l'étape"
+                                                                    className="w-full px-4 py-2 bg-white border-none rounded-xl focus:ring-2 focus:ring-[#00B8D4]/20 outline-none text-sm font-bold text-[#212121]"
+                                                                />
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const newProcess = settings.general.work_process.filter((_: any, i: number) => i !== index);
+                                                                    setSettings({
+                                                                        ...settings,
+                                                                        general: {
+                                                                            ...settings.general,
+                                                                            work_process: newProcess,
+                                                                        },
+                                                                    });
+                                                                }}
+                                                                className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl smooth-animation"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                        <textarea
+                                                            rows={2}
+                                                            value={step.description}
+                                                            onChange={(e) => {
+                                                                const newProcess = [...settings.general.work_process];
+                                                                newProcess[index].description = e.target.value;
+                                                                setSettings({
+                                                                    ...settings,
+                                                                    general: {
+                                                                        ...settings.general,
+                                                                        work_process: newProcess,
+                                                                    },
+                                                                });
+                                                            }}
+                                                            placeholder="Description de cette étape..."
+                                                            className="w-full px-4 py-2 bg-white border-none rounded-xl focus:ring-2 focus:ring-[#00B8D4]/20 outline-none text-sm text-[#212121] resize-none"
+                                                        />
+                                                    </div>
+                                                ))}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSettings({
+                                                            ...settings,
+                                                            general: {
+                                                                ...settings.general,
+                                                                work_process: [
+                                                                    ...settings.general.work_process,
+                                                                    {
+                                                                        number: (settings.general.work_process.length + 1).toString(),
+                                                                        title: "Nouvelle Étape",
+                                                                        description: "Description de la nouvelle étape"
+                                                                    }
+                                                                ],
+                                                            },
+                                                        });
+                                                    }}
+                                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#F8FAFC] hover:bg-[#00B8D4]/5 text-[#00B8D4] rounded-2xl smooth-animation font-bold text-sm"
+                                                >
+                                                    <Plus className="w-4 h-4" />
+                                                    Ajouter une étape
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </div>
                             </div>
                         )}

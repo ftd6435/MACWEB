@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import axios from "axios";
 import {
     MapPin,
     Calendar,
@@ -19,85 +20,159 @@ import {
     Ruler,
     Layers,
     CheckSquare,
-    Droplets
+    Droplets,
+    Share2,
+    Facebook,
+    Twitter,
+    Linkedin,
+    MessageCircle,
+    Link as LinkIcon,
+    User
 } from "lucide-react";
 
-export default function ProjectDetail() {
-    const { id } = useParams();
+type Project = {
+    id: number;
+    slug: string;
+    title: string;
+    description: string;
+    details?: string;
+    image: string | null;
+    location: string;
+    year: string;
+    client_name?: string;
+    metrics?: any;
+    challenges?: any;
+    technical_details?: any;
+    gallery?: any;
+    is_featured?: boolean;
+    category?: { id: number; name: string; slug: string };
+    service?: { id: number; title: string; slug: string };
+};
 
-    // Mock project data based on the template
-    const project = {
-        id,
-        title: "Résidence Les Palmiers",
-        category: "Résidentiel",
-        location: "Dakar, Sénégal",
-        year: "2024",
-        mainImage: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=2000&auto=format&fit=crop",
-        description: "La Résidence Les Palmiers représente l'excellence de l'architecture résidentielle moderne en Afrique de l'Ouest. Ce complexe de standing exceptionnel de 120 appartements combine harmonieusement design contemporain et éléments culturels sénégalais, créant un cadre de vie unique au cœur de Dakar.",
-        subDescription: "Conçu selon les plus hauts standards internationaux, cette résidence offre à ses habitants des espaces de vie généreux, des équipements premium et un environnement verdoyant exceptionnel dans la capitale sénégalaise.",
-        metrics: [
-            { label: "Client", value: "Groupe Immobilier Dakar", icon: <Users className="w-5 h-5" /> },
-            { label: "Superficie", value: "25 000 m²", icon: <Maximize2 className="w-5 h-5" /> },
-            { label: "Durée des Travaux", value: "18 mois", icon: <Clock className="w-5 h-5" /> },
-            { label: "Services Fournis", value: "Construction clé en main", icon: <Target className="w-5 h-5" /> },
-            { label: "Équipe Mobilisée", value: "85 professionnels", icon: <ShieldCheck className="w-5 h-5" /> },
-            { label: "Appartements", value: "120 unités", icon: <Layers className="w-5 h-5" /> },
-        ],
-        gallery: [
-            { url: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=800", title: "Vue d'ensemble", span: "col-span-2 row-span-2" },
-            { url: "https://images.unsplash.com/photo-1503387762-592dee58c160?q=80&w=800", title: "Phase de construction" },
-            { url: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=800", title: "Espaces verts" },
-            { url: "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?q=80&w=800", title: "Intérieur luxe" },
-            { url: "https://images.unsplash.com/photo-1600566753190-17f0bab2a674?q=80&w=800", title: "Chantier en cours" },
-            { url: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=800", title: "Hall d'accueil" },
-        ],
-        challenges: [
-            {
-                title: "Terrain en zone meuble",
-                desc: "Sol sablonneux nécessitant une adaptation structurelle spécifique.",
-                solution: "Conception de fondations profondes par pieux afin d'assurer une stabilité structurelle pérenne."
-            },
-            {
-                title: "Délais serrés de livraison",
-                desc: "Planning de 18 mois imposé par le client.",
-                solution: "Planification détaillée avec phases simultanées et équipes spécialisées en rotation."
-            },
-            {
-                title: "Climat tropical intense",
-                desc: "Températures élevées et humidité importante à gérer.",
-                solution: "Orientation optimisée des bâtiments, ventilation naturelle croisée et matériaux isolants."
-            },
-            {
-                title: "Gestion des eaux pluviales",
-                desc: "Fortes pluies d'hivernage nécessitant une gestion efficace.",
-                solution: "Système de récupération et infiltration intégré par bassins versants avec bassins de rétention."
+export default function ProjectDetail() {
+    const { slug } = useParams();
+    const [project, setProject] = useState<Project | null>(null);
+    const [relatedProjects, setRelatedProjects] = useState<Project[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [comments, setComments] = useState<any[]>([]);
+    const [commentForm, setCommentForm] = useState({ name: "", email: "", text: "" });
+    const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+    const [commentSuccess, setCommentSuccess] = useState(false);
+
+    useEffect(() => {
+        const loadProject = async () => {
+            if (!slug) return;
+            setIsLoading(true);
+            try {
+                const res = await axios.get(`/api/projects/${slug}`);
+                setProject(res.data.project);
+                setRelatedProjects(res.data.related || []);
+
+                // Load comments
+                const commentsRes = await axios.get('/api/comments', {
+                    params: { type: 'Project', id: res.data.project.id }
+                });
+                setComments(commentsRes.data?.data || []);
+            } catch (error) {
+                console.error('Error loading project:', error);
+            } finally {
+                setIsLoading(false);
             }
-        ],
-        technicalDetails: {
-            specifications: ["Structure béton armé haute résistance", "Fondations adaptées au sol sismique", "Isolation thermique par l'extérieur", "Étanchéité multicouche des toitures"],
-            materials: ["Béton haute performance C30/37", "Acier galvanisé à chaud", "Menuiseries aluminium à rupture thermique", "Revêtements pierre naturelle premium"],
-            standards: ["Normes parasismiques en vigueur", "Réglementation thermique RT2020", "Certification environnementale", "Standards d'accessibilité PMR"],
-            innovations: [
-                { title: "Éclairage LED Intelligent", desc: "Système d'éclairage automatique des parties communes avec détection de présence.", icon: <Lightbulb className="w-6 h-6 text-[#00B8D4]" /> },
-                { title: "Récupération d'eau de pluie", desc: "Système de collecte et traitement pour l'arrosage des espaces verts.", icon: <Droplets className="w-6 h-6 text-[#00B8D4]" /> }
-            ]
-        },
-        testimonial: {
-            author: "Amadou Diallo",
-            role: "PDG, Groupe Immobilier Dakar",
-            text: "MAC a dépassé toutes nos attentes sur ce projet. Leur professionnalisme, leur respect des délais et la qualité exceptionnelle de leur travail font d'eux votre partenaire de référence pour tous vos futurs projets immobiliers.",
-            image: "https://i.pravatar.cc/150?u=amadou",
-            stats: [
-                { label: "Respect des délais", value: "100%" },
-                { label: "Qualité du Travail", value: "Excellent" },
-                { label: "Communication", value: "5/5" }
-            ]
-        },
-        similarProjects: [
-            { id: 8, title: "Villa Moderne Plateau", category: "Résidentiel", location: "Plateau, Abidjan", year: "2022", image: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?q=80&w=800" },
-            { id: 11, title: "Cité des Jardins", category: "Résidentiel", location: "Conakry, Guinée", year: "2020", image: "https://images.unsplash.com/photo-1590608897129-79da98d15969?q=80&w=800" },
-            { id: 4, title: "Hôtel Prestige Sahel", category: "Commercial", location: "Ouagadougou", year: "2023", image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=800" },
-        ]
+        };
+        loadProject();
+    }, [slug]);
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <p className="text-[#9E9E9E]">Chargement du projet...</p>
+            </div>
+        );
+    }
+
+    if (!project) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <p className="text-[#9E9E9E]">Projet non trouvé.</p>
+            </div>
+        );
+    }
+
+    // Parse JSON fields safely
+    const metrics = Array.isArray(project.metrics) ? project.metrics : [];
+    const challenges = Array.isArray(project.challenges) ? project.challenges : [];
+    const technicalDetails = project.technical_details || {};
+    const gallery = Array.isArray(project.gallery) ? project.gallery : [];
+
+    // Helper functions
+    const getTimeAgo = (dateString: string) => {
+        try {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffMs = now.getTime() - date.getTime();
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            if (diffDays === 0) return "Aujourd'hui";
+            if (diffDays === 1) return "Hier";
+            if (diffDays < 7) return `Il y a ${diffDays} jours`;
+            if (diffDays < 30) return `Il y a ${Math.floor(diffDays / 7)} semaines`;
+            const date2 = new Date(dateString);
+            return date2.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+        } catch {
+            return dateString;
+        }
+    };
+
+    // Social media sharing
+    const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+    const shareTitle = project?.title || '';
+
+    const shareOnFacebook = () => {
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank', 'width=600,height=400');
+    };
+
+    const shareOnTwitter = () => {
+        window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareTitle)}`, '_blank', 'width=600,height=400');
+    };
+
+    const shareOnLinkedIn = () => {
+        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, '_blank', 'width=600,height=400');
+    };
+
+    const shareOnWhatsApp = () => {
+        window.open(`https://wa.me/?text=${encodeURIComponent(shareTitle + ' ' + shareUrl)}`, '_blank');
+    };
+
+    const copyLink = () => {
+        navigator.clipboard.writeText(shareUrl);
+        alert('Lien copié dans le presse-papiers!');
+    };
+
+    // Comment submission
+    const handleCommentSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!project || !commentForm.name || !commentForm.email || !commentForm.text) return;
+
+        setIsSubmittingComment(true);
+        try {
+            const response = await axios.post('/api/comments', {
+                name: commentForm.name,
+                email: commentForm.email,
+                content: commentForm.text,
+                commentable_type: 'Project',
+                commentable_id: project.id
+            });
+
+            // Add the new comment to the list immediately
+            setComments([response.data, ...comments]);
+            setCommentForm({ name: '', email: '', text: '' });
+            setCommentSuccess(true);
+            setTimeout(() => setCommentSuccess(false), 5000);
+        } catch (error) {
+            console.error('Error submitting comment:', error);
+            alert('Erreur lors de l\'envoi du commentaire. Veuillez réessayer.');
+        } finally {
+            setIsSubmittingComment(false);
+        }
     };
 
     return (
@@ -106,7 +181,7 @@ export default function ProjectDetail() {
             <section className="relative h-[70vh] flex items-center justify-center pt-20">
                 <div className="absolute inset-0 z-0">
                     <img
-                        src={project.mainImage}
+                        src={project.image || 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=2000'}
                         alt={project.title}
                         className="w-full h-full object-cover"
                     />
@@ -126,7 +201,7 @@ export default function ProjectDetail() {
                             <span className="text-white">{project.title}</span>
                         </nav>
                         <span className="px-4 py-1.5 bg-[#00B8D4] text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full">
-                            {project.category}
+                            {project.category?.name || 'Projet'}
                         </span>
                         <h1 className="text-4xl md:text-6xl font-black text-white leading-tight">
                             {project.title}
@@ -139,6 +214,34 @@ export default function ProjectDetail() {
                             <div className="flex items-center">
                                 <Calendar className="w-4 h-4 mr-2 text-[#00B8D4]" />
                                 {project.year}
+                            </div>
+                            <div className="relative group">
+                                <button className="flex items-center px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl smooth-animation">
+                                    <Share2 className="w-4 h-4 mr-2" />
+                                    Partager
+                                </button>
+                                <div className="absolute left-1/2 -translate-x-1/2 top-12 bg-white rounded-2xl shadow-xl border border-[#F1F5F9] p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible smooth-animation z-50 min-w-[200px]">
+                                    <button onClick={shareOnFacebook} className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-[#F8FAFC] rounded-xl smooth-animation text-sm font-bold text-[#212121]">
+                                        <Facebook className="w-4 h-4 text-[#3b5998]" />
+                                        <span>Facebook</span>
+                                    </button>
+                                    <button onClick={shareOnTwitter} className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-[#F8FAFC] rounded-xl smooth-animation text-sm font-bold text-[#212121]">
+                                        <Twitter className="w-4 h-4 text-[#1DA1F2]" />
+                                        <span>Twitter/X</span>
+                                    </button>
+                                    <button onClick={shareOnLinkedIn} className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-[#F8FAFC] rounded-xl smooth-animation text-sm font-bold text-[#212121]">
+                                        <Linkedin className="w-4 h-4 text-[#0A66C2]" />
+                                        <span>LinkedIn</span>
+                                    </button>
+                                    <button onClick={shareOnWhatsApp} className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-[#F8FAFC] rounded-xl smooth-animation text-sm font-bold text-[#212121]">
+                                        <MessageCircle className="w-4 h-4 text-[#25D366]" />
+                                        <span>WhatsApp</span>
+                                    </button>
+                                    <button onClick={copyLink} className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-[#F8FAFC] rounded-xl smooth-animation text-sm font-bold text-[#212121]">
+                                        <LinkIcon className="w-4 h-4 text-[#00B8D4]" />
+                                        <span>Copier le lien</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </motion.div>
@@ -202,8 +305,9 @@ export default function ProjectDetail() {
                     <div className="text-center mb-20">
                         <h2 className="text-3xl font-black text-[#212121]">Défis et Solutions</h2>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {project.challenges.map((item, i) => (
+                    {challenges.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            {challenges.map((item: any, i: number) => (
                             <div key={i} className="space-y-4">
                                 <div className="p-8 bg-[#F8FAFC] rounded-[2.5rem] border border-[#F1F5F9] relative group hover:border-[#00B8D4]/30 smooth-animation">
                                     <div className="flex items-start space-x-6">
@@ -227,13 +331,15 @@ export default function ProjectDetail() {
                                 </div>
                             </div>
                         ))}
-                    </div>
+                        </div>
+                    ) : (
+                        <p className="text-center text-[#9E9E9E]">Aucun défi documenté.</p>
+                    )}
                 </div>
             </section>
 
             {/* Technical Details */}
-            <section className="py-24 bg-[#F8FAFC]">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <section className="py-24 bg-[#F8FAFC]">\n                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-20">
                         <h2 className="text-3xl font-black text-[#212121]">Détails Techniques</h2>
                     </div>
@@ -330,6 +436,75 @@ export default function ProjectDetail() {
                 </div>
             </section>
 
+            {/* Comments Section */}
+            <section className="py-24 bg-white">
+                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+                    <h3 className="text-2xl font-black text-[#212121]">Commentaires ({comments.length})</h3>
+
+                    <div className="space-y-8">
+                        {comments.length > 0 ? comments.map((comment) => (
+                            <div key={comment.id} className="flex gap-6">
+                                <div className="w-12 h-12 rounded-2xl bg-[#F1F5F9] flex items-center justify-center shrink-0">
+                                    <User className="w-5 h-5 text-[#9E9E9E]" />
+                                </div>
+                                <div className="flex-1 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <h5 className="font-black text-[#212121] text-sm">{comment.name}</h5>
+                                        <span className="text-[10px] font-bold text-[#9E9E9E]">{getTimeAgo(comment.created_at)}</span>
+                                    </div>
+                                    <p className="text-sm text-[#616161] leading-relaxed">{comment.content}</p>
+                                </div>
+                            </div>
+                        )) : (
+                            <p className="text-sm text-[#9E9E9E] text-center py-8">Aucun commentaire pour le moment. Soyez le premier à commenter!</p>
+                        )}
+                    </div>
+
+                    {/* Comment Form */}
+                    <form onSubmit={handleCommentSubmit} className="bg-white rounded-[2rem] border border-[#F1F5F9] p-8 shadow-sm space-y-6">
+                        <h4 className="text-lg font-black text-[#212121]">Laisser un commentaire</h4>
+                        {commentSuccess && (
+                            <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl text-sm">
+                                ✓ Votre commentaire a été publié avec succès!
+                            </div>
+                        )}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <input
+                                type="text"
+                                placeholder="Votre Nom"
+                                value={commentForm.name}
+                                onChange={(e) => setCommentForm({...commentForm, name: e.target.value})}
+                                required
+                                className="w-full px-6 py-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl focus:ring-2 focus:ring-[#00B8D4] focus:border-transparent smooth-animation text-sm outline-none"
+                            />
+                            <input
+                                type="email"
+                                placeholder="Votre Email"
+                                value={commentForm.email}
+                                onChange={(e) => setCommentForm({...commentForm, email: e.target.value})}
+                                required
+                                className="w-full px-6 py-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl focus:ring-2 focus:ring-[#00B8D4] focus:border-transparent smooth-animation text-sm outline-none"
+                            />
+                        </div>
+                        <textarea
+                            rows={5}
+                            placeholder="Votre message..."
+                            value={commentForm.text}
+                            onChange={(e) => setCommentForm({...commentForm, text: e.target.value})}
+                            required
+                            className="w-full px-6 py-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl focus:ring-2 focus:ring-[#00B8D4] focus:border-transparent smooth-animation text-sm outline-none"
+                        ></textarea>
+                        <button
+                            type="submit"
+                            disabled={isSubmittingComment}
+                            className="w-full py-4 bg-[#00B8D4] text-white font-black rounded-2xl shadow-lg shadow-[#00B8D4]/20 hover:bg-[#0097A7] smooth-animation uppercase tracking-widest text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isSubmittingComment ? 'Envoi...' : 'Poster le commentaire'}
+                        </button>
+                    </form>
+                </div>
+            </section>
+
             {/* Similar Projects */}
             <section className="py-24 bg-[#F8FAFC]">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-end mb-16">
@@ -342,17 +517,21 @@ export default function ProjectDetail() {
                 </div>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {project.similarProjects.map((p) => (
+                        {relatedProjects.length > 0 ? relatedProjects.map((p) => (
                             <Link
                                 key={p.id}
-                                to={`/projects/${p.id}`}
+                                to={`/projects/${p.slug}`}
                                 className="group bg-white rounded-[2.5rem] overflow-hidden border border-[#F1F5F9] shadow-sm hover:shadow-xl smooth-animation"
                             >
                                 <div className="aspect-[16/10] overflow-hidden relative">
-                                    <img src={p.image} alt={p.title} className="w-full h-full object-cover group-hover:scale-110 smooth-animation" />
+                                    <img
+                                        src={p.image || 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=800'}
+                                        alt={p.title}
+                                        className="w-full h-full object-cover group-hover:scale-110 smooth-animation"
+                                    />
                                     <div className="absolute top-4 left-4">
                                         <span className="px-3 py-1 bg-[#00B8D4] text-white text-[9px] font-black uppercase tracking-widest rounded-full">
-                                            {p.category}
+                                            {p.category?.name || 'Projet'}
                                         </span>
                                     </div>
                                 </div>
@@ -364,7 +543,9 @@ export default function ProjectDetail() {
                                     </div>
                                 </div>
                             </Link>
-                        ))}
+                        )) : (
+                            <p className="col-span-3 text-center text-[#9E9E9E]">Aucun projet similaire.</p>
+                        )}
                     </div>
                 </div>
             </section>
