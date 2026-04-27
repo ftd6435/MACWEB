@@ -60,7 +60,7 @@ export default function Services() {
     const [workProcess, setWorkProcess] = React.useState<ProcessStep[]>([]);
     const [contactPhone, setContactPhone] = React.useState("+221 77 518 45 67");
     const [contactEmail, setContactEmail] = React.useState("contact@mac-construction.com");
-    const [contactAddress, setContactAddress] = React.useState("12 Avenue Cheikh Anta Diop, Dakar, Sénégal");
+    const [contactAddress, setContactAddress] = React.useState("Conakry, République de Guinée");
 
     React.useEffect(() => {
         const load = async () => {
